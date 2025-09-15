@@ -17,7 +17,8 @@
 
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .sidebar { width: 240px; }
+    .sidebar { width: 240px; transition: transform 0.3s ease; }
+    .sidebar-hidden { transform: translateX(-100%); }
     .menu-item.active {
       background: rgba(255,255,255,0.12);
       border-radius: 8px;
@@ -26,6 +27,11 @@
     table tbody tr:nth-child(even) { background-color: #f8fafc; }
     table tbody tr:hover { background-color: #f1f5f9; }
     .card { background: white; border-radius: 12px; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; z-index: 30;
+    }
+    .overlay.active { display: block; }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -33,8 +39,8 @@
   <!-- Login Page -->
   <div id="loginPage" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-500 to-indigo-600">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
-      <h1 class="text-1xl font-extrabold mb-6 text-center text-sky-600">SEMANGAT GUYS 
-        LOGIN user@gmail.com/user123
+      <h1 class="text-1xl font-extrabold mb-6 text-center text-sky-600">
+        SEMANGAT GUYS LOGIN user@gmail.com/user123
       </h1>
       <input id="email" type="email" placeholder="Email" class="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
       <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
@@ -44,22 +50,26 @@
   </div>
 
   <!-- Dashboard -->
-  <div id="dashboard" class="hidden h-screen flex">
+  <div id="dashboard" class="hidden h-screen flex relative">
+
+    <!-- Overlay untuk mobile -->
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen">
-      <h2 class="text-2xl font-bold mb-8"> TENX APPAREL</h2>
+    <aside id="sidebar" class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen fixed md:static z-40 sidebar-hidden md:translate-x-0">
+      <h2 class="text-2xl font-bold mb-8">TENX APPAREL</h2>
 
       <!-- Admin Menu -->
       <nav id="adminMenu" class="space-y-2 hidden">
-        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')"> Gaji</div>
-        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('keuanganPage')"> Keuangan</div>
-        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('rabPage')"> RAB</div>
-        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('grafikPage')"> Grafik</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')">Gaji</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('keuanganPage')">Keuangan</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('rabPage')">RAB</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('grafikPage')">Grafik</div>
       </nav>
 
       <!-- User Menu -->
       <nav id="userMenu" class="space-y-2 hidden">
-        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')"> Gaji</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')">Gaji</div>
       </nav>
 
       <div class="mt-auto">
@@ -68,7 +78,14 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full md:ml-0 ml-0">
+
+      <!-- Header dengan tombol hamburger -->
+      <div class="flex items-center justify-between mb-6 md:hidden">
+        <button onclick="toggleSidebar()" class="text-sky-700 text-2xl">☰</button>
+        <h1 class="text-xl font-bold text-sky-700">Dashboard</h1>
+      </div>
+
       <!-- Gaji Page -->
       <section id="gajiPage" class="hidden">
         <div class="flex justify-between items-center mb-6">
@@ -76,15 +93,15 @@
           <button id="exportBtn" onclick="exportGajiCSV()" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
         </div>
 
-        <div id="adminGajiForm" class="mb-6 hidden flex flex-wrap gap-2">
+        <div id="adminGajiForm" class="mb-6 hidden flex flex-col md:flex-row gap-2">
           <input id="nama" placeholder="Nama" class="p-2 border rounded-lg flex-1">
-          <input id="jumlah" type="number" placeholder="Jumlah" class="p-2 border rounded-lg w-28">
-          <input id="bayaran" type="number" placeholder="Bayaran" class="p-2 border rounded-lg w-32">
+          <input id="jumlah" type="number" placeholder="Jumlah" class="p-2 border rounded-lg md:w-28 w-full">
+          <input id="bayaran" type="number" placeholder="Bayaran" class="p-2 border rounded-lg md:w-32 w-full">
           <button onclick="tambahGaji()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full card overflow-hidden">
+          <table class="w-full card overflow-hidden text-sm">
             <thead class="bg-sky-600 text-white">
               <tr>
                 <th class="p-3 text-left">Nama</th>
@@ -105,18 +122,18 @@
       <section id="keuanganPage" class="hidden">
         <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan Keuangan</h2>
 
-        <div class="mb-6 flex flex-wrap gap-2">
+        <div class="mb-6 flex flex-col md:flex-row gap-2">
           <select id="jenis" class="p-2 border rounded-lg">
             <option value="pemasukan">Pemasukan</option>
             <option value="pengeluaran">Pengeluaran</option>
           </select>
-          <input id="nominal" type="number" placeholder="Nominal" class="p-2 border rounded-lg w-40">
+          <input id="nominal" type="number" placeholder="Nominal" class="p-2 border rounded-lg md:w-40 w-full">
           <input id="keterangan" placeholder="Keterangan" class="p-2 border rounded-lg flex-1">
           <button onclick="tambahKeuangan()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full card overflow-hidden">
+          <table class="w-full card overflow-hidden text-sm">
             <thead class="bg-sky-600 text-white">
               <tr>
                 <th class="p-3">Jenis</th>
@@ -135,14 +152,14 @@
       <section id="rabPage" class="hidden">
         <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan RAB</h2>
 
-        <div class="mb-6 flex flex-wrap gap-2">
+        <div class="mb-6 flex flex-col md:flex-row gap-2">
           <input id="rencana" placeholder="Rencana" class="p-2 border rounded-lg flex-1">
-          <input id="anggaran" type="number" placeholder="Anggaran" class="p-2 border rounded-lg w-40">
+          <input id="anggaran" type="number" placeholder="Anggaran" class="p-2 border rounded-lg md:w-40 w-full">
           <button onclick="tambahRAB()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full card overflow-hidden">
+          <table class="w-full card overflow-hidden text-sm">
             <thead class="bg-sky-600 text-white">
               <tr>
                 <th class="p-3">Rencana</th>
@@ -183,6 +200,14 @@
   </div>
 
   <script>
+    // === Sidebar Toggle (Mobile) ===
+    function toggleSidebar(){
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("overlay");
+      sidebar.classList.toggle("sidebar-hidden");
+      overlay.classList.toggle("active");
+    }
+
     // === Firebase ===
     const firebaseConfig = {
       apiKey: "AIzaSyA2jBUihCiLq6FBWKuJKrpXZcUAAFm12b0",
@@ -314,117 +339,86 @@
         const blob=new Blob([csv],{type:"text/csv"});
         const a=document.createElement("a");
         a.href=URL.createObjectURL(blob);
-        a.download="gaji.csv";
-        a.click();
+        a.download="gaji.csv"; a.click();
       });
     }
 
     // === Keuangan ===
     function tambahKeuangan(){
-      const data = {
-        jenis: document.getElementById("jenis").value,
-        nominal: parseInt(document.getElementById("nominal").value),
-        keterangan: document.getElementById("keterangan").value,
-        tanggal: new Date().toISOString().split("T")[0]
-      };
-      db.ref("keuangan").push(data);
-    }
-
-    function editKeuangan(id,item){
-      const jenis = prompt("Jenis (pemasukan/pengeluaran):", item.jenis);
-      const nominalRaw = prompt("Nominal:", item.nominal);
-      const keterangan = prompt("Keterangan:", item.keterangan);
-      if(jenis && nominalRaw && keterangan){
-        const nominal = Number((nominalRaw+"").replace(/[^\d\-]/g,'')) || 0;
-        db.ref("keuangan/"+id).set({
-          jenis, nominal, keterangan,
-          tanggal: item.tanggal
-        });
-      }
-    }
-
-    function loadKeuangan(){
-      db.ref("keuangan").on("value",snap=>{
-        const tbody=document.getElementById("keuanganTable"); tbody.innerHTML="";
-        let pemasukan=0, pengeluaran=0; let data=[];
-        snap.forEach(c=>{
-          const k=c.val();
-          if(k.jenis==="pemasukan") pemasukan+=k.nominal;
-          else pengeluaran+=k.nominal;
-          data.push(k);
-          const tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td class="p-3">${k.jenis}</td>
-            <td class="p-3">Rp${formatRupiah(k.nominal)}</td>
-            <td class="p-3">${k.keterangan}</td>
-            <td class="p-3">${k.tanggal}</td>
-            <td class="p-3">
-              <button onclick='editKeuangan("${c.key}",${JSON.stringify(k)})' class="text-blue-600">Edit</button>
-              <button onclick='hapusKeuangan("${c.key}")' class="text-red-600">Hapus</button>
-            </td>`;
-          tbody.appendChild(tr);
-        });
-        updateGrafik(pemasukan,pengeluaran);
-      });
+      const jenis=document.getElementById("jenis").value;
+      const nominal=parseInt(document.getElementById("nominal").value);
+      const keterangan=document.getElementById("keterangan").value;
+      const tanggal=new Date().toLocaleString();
+      db.ref("keuangan").push({jenis,nominal,keterangan,tanggal});
     }
 
     function hapusKeuangan(id){ db.ref("keuangan/"+id).remove(); }
 
-    // === RAB ===
-    function tambahRAB(){
-      const data = {
-        rencana: document.getElementById("rencana").value,
-        anggaran: parseInt(document.getElementById("anggaran").value),
-        tanggal: new Date().toISOString().split("T")[0]
-      };
-      db.ref("rab").push(data);
-    }
-
-    function editRAB(id,item){
-      const rencana = prompt("Rencana:", item.rencana);
-      const anggaran = parseInt(prompt("Anggaran:", item.anggaran));
-      if(rencana && !isNaN(anggaran)){
-        db.ref("rab/"+id).set({
-          rencana, anggaran, tanggal: item.tanggal
-        });
-      }
-    }
-
-    function hapusRAB(id){ db.ref("rab/"+id).remove(); }
-
-    function loadRAB(){
-      db.ref("rab").on("value",snap=>{
-        const tbody=document.getElementById("rabTable"); tbody.innerHTML="";
+    function loadKeuangan(){
+      db.ref("keuangan").on("value",snap=>{
+        const tbody=document.getElementById("keuanganTable");
+        tbody.innerHTML="";
+        let totalP=0,totalK=0;
         snap.forEach(c=>{
-          const r=c.val();
+          const i=c.val();
+          if(i.jenis==="pemasukan") totalP+=i.nominal; else totalK+=i.nominal;
           const tr=document.createElement("tr");
           tr.innerHTML=`
-            <td class="p-3">${r.rencana}</td>
-            <td class="p-3">Rp${formatRupiah(r.anggaran)}</td>
-            <td class="p-3">${r.tanggal}</td>
-            <td class="p-3">
-              <button onclick='editRAB("${c.key}",${JSON.stringify(r)})' class="text-blue-600">Edit</button>
-              <button onclick='hapusRAB("${c.key}")' class="text-red-600">Hapus</button>
-            </td>`;
+            <td class="p-3">${i.jenis}</td>
+            <td class="p-3">Rp${formatRupiah(i.nominal)}</td>
+            <td class="p-3">${i.keterangan}</td>
+            <td class="p-3">${i.tanggal}</td>
+            <td class="p-3"><button onclick='hapusKeuangan("${c.key}")' class="text-red-600">Hapus</button></td>`;
+          tbody.appendChild(tr);
+        });
+        updateGrafik(totalP,totalK);
+      });
+    }
+
+    // === RAB ===
+    function tambahRAB(){
+      const rencana=document.getElementById("rencana").value;
+      const anggaran=parseInt(document.getElementById("anggaran").value);
+      const tanggal=new Date().toLocaleString();
+      db.ref("rab").push({rencana,anggaran,tanggal});
+    }
+    function hapusRAB(id){ db.ref("rab/"+id).remove(); }
+    function loadRAB(){
+      db.ref("rab").on("value",snap=>{
+        const tbody=document.getElementById("rabTable");
+        tbody.innerHTML="";
+        snap.forEach(c=>{
+          const i=c.val();
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td class="p-3">${i.rencana}</td>
+            <td class="p-3">Rp${formatRupiah(i.anggaran)}</td>
+            <td class="p-3">${i.tanggal}</td>
+            <td class="p-3"><button onclick='hapusRAB("${c.key}")' class="text-red-600">Hapus</button></td>`;
           tbody.appendChild(tr);
         });
       });
     }
 
     // === Grafik ===
-    function updateGrafik(pemasukan,pengeluaran){
-      const saldo=pemasukan-pengeluaran;
-      document.getElementById("totalPemasukan").textContent="Rp"+formatRupiah(pemasukan);
-      document.getElementById("totalPengeluaran").textContent="Rp"+formatRupiah(pengeluaran);
-      document.getElementById("saldo").textContent="Rp"+formatRupiah(saldo);
+    function updateGrafik(totalP,totalK){
+      document.getElementById("totalPemasukan").innerText="Rp"+formatRupiah(totalP);
+      document.getElementById("totalPengeluaran").innerText="Rp"+formatRupiah(totalK);
+      document.getElementById("saldo").innerText="Rp"+formatRupiah(totalP-totalK);
 
       const ctx=document.getElementById("grafikCanvas").getContext("2d");
       if(chart) chart.destroy();
       chart=new Chart(ctx,{
         type:"bar",
-        data:{labels:["Pemasukan","Pengeluaran","Saldo"],
-          datasets:[{label:"Keuangan",data:[pemasukan,pengeluaran,saldo],
-            backgroundColor:["#10b981","#ef4444","#3b82f6"]}]}
+        data:{
+          labels:["Pemasukan","Pengeluaran"],
+          datasets:[{
+            label:"Keuangan",
+            data:[totalP,totalK],
+            backgroundColor:["#22c55e","#ef4444"]
+          }]
+        },
+        options:{responsive:true,maintainAspectRatio:false}
       });
     }
   </script>
