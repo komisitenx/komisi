@@ -1,683 +1,432 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TENX APPAREL - Pencatatan Keuangan & Komisi Tim</title>
-  <style>
-    /* ========== ORIGINAL STYLES (keaslian tampilanmu) ========== */
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
-    body{background:#f5f7f9;color:#333;line-height:1.6;}
-    .container{max-width:1200px;margin:0 auto;padding:20px;}
-    header{background:linear-gradient(135deg,#0062cc,#0095ff);color:#fff;padding:20px 0;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.1);margin-bottom:30px;}
-    .header-content{display:flex;justify-content:space-between;align-items:center;padding:0 14px;}
-    .logo{font-size:24px;font-weight:bold;}
-    nav ul{display:flex;list-style:none;}
-    nav li{margin-left:20px;}
-    nav a{color:#fff;text-decoration:none;font-weight:bold;padding:8px 15px;border-radius:5px;transition:background .3s;}
-    nav a:hover{background:rgba(255,255,255,.2);}
-    .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:30px;}
-    .card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.05);}
-    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;}
-    .card-title{font-size:18px;font-weight:bold;color:#0062cc;}
-    .summary-box{background:linear-gradient(135deg,#f5f7f9,#e1e9f0);padding:20px;border-radius:8px;margin-bottom:20px;}
-    .summary-amount{font-size:28px;font-weight:bold;margin:10px 0;}
-    form{margin-top:15px;}
-    .form-group{margin-bottom:15px;}
-    label{display:block;margin-bottom:5px;font-weight:bold;}
-    input,select,textarea{width:100%;padding:12px;border:1px solid #ddd;border-radius:5px;font-size:16px;}
-    button{background:#0062cc;color:#fff;border:none;padding:12px 20px;border-radius:5px;cursor:pointer;font-weight:bold;transition:background .3s;}
-    button:hover{background:#004a99;}
-    table{width:100%;border-collapse:collapse;margin-top:15px;}
-    th,td{padding:12px 15px;text-align:left;border-bottom:1px solid #eee;}
-    th{background:#f5f7f9;font-weight:bold;}
-    tr:hover{background:#f9f9f9;}
-    .positive{color:#28a745;font-weight:bold;}
-    .negative{color:#dc3545;font-weight:bold;}
-    .action-btn{background:none;border:none;color:#0062cc;cursor:pointer;padding:5px;}
-    footer{text-align:center;padding:20px;margin-top:50px;border-top:1px solid #eee;color:#666;}
-    @media(max-width:768px){.header-content{flex-direction:column;text-align:center;}nav ul{margin-top:15px;justify-content:center;}nav li{margin:0 10px}.dashboard-grid{grid-template-columns:1fr;}}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TENX SISTEM - Dashboard</title>
 
-    /* ========== ADDED STYLES ========== */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;}
-    .login-panel{background:#fff;padding:22px;border-radius:10px;width:380px;box-shadow:0 8px 30px rgba(0,0,0,.2);}
-    .login-panel h2{margin-bottom:12px;}
-    .login-note{font-size:13px;color:#555;margin-top:8px;}
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9998;}
-    .modal .modal-box{background:#fff;padding:18px;border-radius:8px;width:520px;max-width:95%;}
-    .modal .modal-actions{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;}
-    .hide-for-user{ } /* toggled by JS */
-    .nav-hidden{display:none !important;}
-    /* small helpers */
-    .small{font-size:13px;color:#666;}
-    .muted{color:#777;}
-    .flex{display:flex;gap:8px;align-items:center;}
-    .pill{padding:6px 10px;border-radius:999px;background:#eef5ff;color:#0062cc;font-weight:600;}
-    .center{text-align:center;}
-    /* responsive table overflow */
-    .table-wrap{overflow:auto;}
+  <!-- Tailwind + Font -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js & Firebase -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .sidebar { width: 240px; }
+    .menu-item.active {
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(2,6,23,0.08);
+    }
+    table tbody tr:nth-child(even) { background-color: #f8fafc; }
+    table tbody tr:hover { background-color: #f1f5f9; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
   </style>
 </head>
-<body>
-  <!-- LOGIN OVERLAY -->
-  <div id="loginOverlay" class="overlay" style="display:flex;">
-    <div class="login-panel" role="dialog" aria-modal="true">
-      <h2>Login TENX SISTEM</h2>
-      <div class="form-group">
-        <label for="login-username">Username</label>
-        <input id="login-username" type="text" placeholder="admin / user" />
-      </div>
-      <div class="form-group">
-        <label for="login-password">Password</label>
-        <input id="login-password" type="password" placeholder="password" />
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="loginBtn">Login</button>
-        <button id="demoBtn" class="action-btn" style="color:#444">Demo (user)</button>
-      </div>
-      <div class="login-note">
-        <strong>Credentials:</strong> <span class="pill"></span> USN DAN PASSWORD <span class="pill">user/user123</span> (tim).<br>
-SEMANGAT KING KITA WUJUDKAN 10JUTA PERBULAN ITU.
-      </div>
-      <p id="loginError" style="color:#c00;margin-top:8px"></p>
+<body class="bg-gray-50">
+
+  <!-- Login Page -->
+  <div id="loginPage" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-500 to-indigo-600">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
+      <h1 class="text-1xl font-extrabold mb-6 text-center text-sky-600">SEMANGAT GUYS 
+        LOGIN user@gmail.com/user123
+      </h1>
+      <input id="email" type="email" placeholder="Email" class="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
+      <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
+      <button onclick="login()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg font-semibold transition">Login</button>
+      <p id="loginError" class="text-red-500 text-sm mt-3 hidden text-center">Login gagal, cek email/password</p>
     </div>
   </div>
 
-  <!-- EDIT MODAL -->
-  <div id="editModal" class="modal" aria-hidden="true">
-    <div class="modal-box" role="dialog" aria-modal="true">
-      <h3 id="editModalTitle">Edit</h3>
-      <div id="editModalBody"></div>
-      <div class="modal-actions">
-        <button id="editCancel" class="action-btn">Batal</button>
-        <button id="editSave">Simpan</button>
-      </div>
-    </div>
-  </div>
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden h-screen flex">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen">
+      <h2 class="text-2xl font-bold mb-8"> TENX APPAREL</h2>
 
-  <!-- ORIGINAL HTML (keutuhan tampilan) -->
-  <header>
-    <div class="container">
-      <div class="header-content">
-        <div class="logo">TENX APPAREL
-        </div>
-        <nav id="mainNav">
-          <ul>
-            <li><a href="#pencatatan">Pencatatan</a></li>
-            <li><a href="#anggaran">Anggaran</a></li>
-            <li><a href="#rab">RAB</a></li>
-            <li><a href="#komisi">Komisi Tim</a></li>
-            <li><a href="#jadwal">Jadwal Project</a></li>
-          </ul>
-        </nav>
-      </div>
-    </div>
-  </header>
+      <!-- Admin Menu -->
+      <nav id="adminMenu" class="space-y-2 hidden">
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')"> Gaji</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('keuanganPage')"> Keuangan</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('rabPage')"> RAB</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('grafikPage')"> Grafik</div>
+      </nav>
 
-  <div class="container">
-    <!-- Ringkasan & Tambah Transaksi -->
-    <section class="dashboard-grid hide-for-user" id="summaryAndAddSection">
-      <div class="card">
-        <div class="card-header"><h2 class="card-title">Ringkasan Keuangan</h2></div>
-        <div class="summary-box">
-          <div>Saldo Saat Ini</div>
-          <div class="summary-amount" id="saldo">Rp 0</div>
-        </div>
-        <div class="summary-box">
-          <div>Pemasukan Bulan Ini</div>
-          <div class="summary-amount positive" id="pemasukan">Rp 0</div>
-        </div>
-        <div class="summary-box">
-          <div>Pengeluaran Bulan Ini</div>
-          <div class="summary-amount negative" id="pengeluaran">Rp 0</div>
-        </div>
-      </div>
+      <!-- User Menu -->
+      <nav id="userMenu" class="space-y-2 hidden">
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')"> Gaji</div>
+      </nav>
 
-      <div class="card">
-        <div class="card-header"><h2 class="card-title">Tambah Transaksi</h2></div>
-        <form id="transaksi-form" class="hide-for-user">
-          <div class="form-group">
-            <label for="jenis">Jenis Transaksi</label>
-            <select id="jenis" required><option value="pemasukan">Pemasukan</option><option value="pengeluaran">Pengeluaran</option></select>
+      <div class="mt-auto">
+        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 w-full py-2 rounded-lg font-semibold">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <!-- Gaji Page -->
+      <section id="gajiPage" class="hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-sky-700">Daftar Gaji</h2>
+          <button id="exportBtn" onclick="exportGajiCSV()" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
+        </div>
+
+        <div id="adminGajiForm" class="mb-6 hidden flex flex-wrap gap-2">
+          <input id="nama" placeholder="Nama" class="p-2 border rounded-lg flex-1">
+          <input id="jumlah" type="number" placeholder="Jumlah" class="p-2 border rounded-lg w-28">
+          <input id="bayaran" type="number" placeholder="Bayaran" class="p-2 border rounded-lg w-32">
+          <button onclick="tambahGaji()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full card overflow-hidden">
+            <thead class="bg-sky-600 text-white">
+              <tr>
+                <th class="p-3 text-left">Nama</th>
+                <th class="p-3">Jumlah</th>
+                <th class="p-3">Bayaran</th>
+                <th class="p-3">Total</th>
+                <th class="p-3">Cashout</th>
+                <th class="p-3">Sisa</th>
+                <th class="p-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="gajiTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Keuangan Page -->
+      <section id="keuanganPage" class="hidden">
+        <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan Keuangan</h2>
+
+        <div class="mb-6 flex flex-wrap gap-2">
+          <select id="jenis" class="p-2 border rounded-lg">
+            <option value="pemasukan">Pemasukan</option>
+            <option value="pengeluaran">Pengeluaran</option>
+          </select>
+          <input id="nominal" type="number" placeholder="Nominal" class="p-2 border rounded-lg w-40">
+          <input id="keterangan" placeholder="Keterangan" class="p-2 border rounded-lg flex-1">
+          <button onclick="tambahKeuangan()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full card overflow-hidden">
+            <thead class="bg-sky-600 text-white">
+              <tr>
+                <th class="p-3">Jenis</th>
+                <th class="p-3">Nominal</th>
+                <th class="p-3">Keterangan</th>
+                <th class="p-3">Tanggal</th>
+                <th class="p-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="keuanganTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RAB Page -->
+      <section id="rabPage" class="hidden">
+        <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan RAB</h2>
+
+        <div class="mb-6 flex flex-wrap gap-2">
+          <input id="rencana" placeholder="Rencana" class="p-2 border rounded-lg flex-1">
+          <input id="anggaran" type="number" placeholder="Anggaran" class="p-2 border rounded-lg w-40">
+          <button onclick="tambahRAB()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full card overflow-hidden">
+            <thead class="bg-sky-600 text-white">
+              <tr>
+                <th class="p-3">Rencana</th>
+                <th class="p-3">Anggaran</th>
+                <th class="p-3">Tanggal</th>
+                <th class="p-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="rabTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Grafik Page -->
+      <section id="grafikPage" class="hidden">
+        <h2 class="text-2xl font-bold mb-6 text-sky-700">Grafik Keuangan</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-green-100 p-5 rounded-xl shadow card">
+            <h3 class="font-bold text-green-700">Total Pemasukan</h3>
+            <p id="totalPemasukan" class="text-2xl font-extrabold"></p>
           </div>
-          <div class="form-group"><label for="jumlah">Jumlah (Rp)</label><input type="number" id="jumlah" placeholder="Masukkan jumlah" required></div>
-          <div class="form-group"><label for="kategori">Kategori</label><select id="kategori" required><option value="gaji">Gaji</option><option value="proyek">Proyek</option><option value="investasi">Investasi</option><option value="lainnya">Lainnya</option></select></div>
-          <div class="form-group"><label for="deskripsi">Deskripsi</label><input type="text" id="deskripsi" placeholder="Deskripsi transaksi" required></div>
-          <div class="form-group"><label for="tanggal">Tanggal</label><input type="date" id="tanggal" required></div>
-          <button type="submit">Simpan Transaksi</button>
-        </form>
-      </div>
-    </section>
+          <div class="bg-red-100 p-5 rounded-xl shadow card">
+            <h3 class="font-bold text-red-700">Total Pengeluaran</h3>
+            <p id="totalPengeluaran" class="text-2xl font-extrabold"></p>
+          </div>
+          <div class="bg-blue-100 p-5 rounded-xl shadow card">
+            <h3 class="font-bold text-blue-700">Saldo</h3>
+            <p id="saldo" class="text-2xl font-extrabold"></p>
+          </div>
+        </div>
 
-    <!-- PENCATATAN -->
-    <section id="pencatatan" class="card hide-for-user">
-      <div class="card-header"><h2 class="card-title">Pencatatan Keuangan</h2></div>
-      <div class="table-wrap">
-        <table><thead><tr><th>Tanggal</th><th>Deskripsi</th><th>Kategori</th><th>Jenis</th><th>Jumlah</th><th>Aksi</th></tr></thead>
-        <tbody id="transaksi-list"></tbody></table>
-      </div>
-    </section>
-
-    <!-- ANGGARAN -->
-    <section id="anggaran" class="card hide-for-user">
-      <div class="card-header"><h2 class="card-title">Rencana Anggaran</h2></div>
-      <form id="anggaran-form" class="hide-for-user">
-        <div class="form-group"><label for="anggaran-bulan">Bulan</label><select id="anggaran-bulan" required><option>Januari</option><option>Februari</option><option>Maret</option><option>April</option><option>Mei</option><option>Juni</option><option>Juli</option><option>Agustus</option><option>September</option><option>Oktober</option><option>November</option><option>Desember</option></select></div>
-        <div class="form-group"><label for="anggaran-tahun">Tahun</label><input type="number" id="anggaran-tahun" min="2023" max="2030" value="2023" required></div>
-        <div class="form-group"><label for="anggaran-jumlah">Jumlah Anggaran (Rp)</label><input type="number" id="anggaran-jumlah" placeholder="Jumlah anggaran" required></div>
-        <div class="form-group"><label for="anggaran-kategori">Kategori</label><select id="anggaran-kategori" required><option value="operasional">Operasional</option><option value="gaji">Gaji</option><option value="proyek">Proyek</option><option value="investasi">Investasi</option><option value="lainnya">Lainnya</option></select></div>
-        <button type="submit">Simpan Anggaran</button>
-      </form>
-
-      <h3 style="margin-top:30px;">Daftar Anggaran</h3>
-      <div class="table-wrap">
-        <table><thead><tr><th>Bulan/Tahun</th><th>Kategori</th><th>Anggaran</th><th>Terpakai</th><th>Sisa</th><th>Aksi</th></tr></thead>
-        <tbody id="anggaran-list"></tbody></table>
-      </div>
-    </section>
-
-    <!-- RAB -->
-    <section id="rab" class="card hide-for-user">
-      <div class="card-header"><h2 class="card-title">Rencana Anggaran Biaya (RAB)</h2></div>
-      <form id="rab-form" class="hide-for-user">
-        <div class="form-group"><label for="rab-nama">Nama Proyek</label><input type="text" id="rab-nama" placeholder="Nama proyek" required></div>
-        <div class="form-group"><label for="rab-deskripsi">Deskripsi Proyek</label><textarea id="rab-deskripsi" rows="3" placeholder="Deskripsi proyek"></textarea></div>
-        <div class="form-group"><label for="rab-item">Item Biaya</label><input type="text" id="rab-item" placeholder="Nama item biaya" required></div>
-        <div class="form-group"><label for="rab-kuantitas">Kuantitas</label><input type="number" id="rab-kuantitas" placeholder="Jumlah" required></div>
-        <div class="form-group"><label for="rab-harga">Harga Satuan (Rp)</label><input type="number" id="rab-harga" placeholder="Harga per unit" required></div>
-        <button type="submit">Tambah Item</button>
-      </form>
-
-      <h3 style="margin-top:30px;">RAB Proyek Website Perusahaan</h3>
-      <div class="table-wrap">
-        <table><thead><tr><th>Item Biaya</th><th>Kuantitas</th><th>Harga Satuan</th><th>Total</th><th>Aksi</th></tr></thead>
-        <tbody id="rab-list"></tbody>
-        <tfoot><tr><td colspan="3" style="text-align:right;font-weight:bold;">Total RAB:</td><td style="font-weight:bold;" id="rab-total">Rp 0</td><td></td></tr></tfoot>
-        </table>
-      </div>
-    </section>
-
-    <!-- KOMISI (visible to all) -->
-    <section id="komisi" class="card">
-      <div class="card-header"><h2 class="card-title">Pencatatan Gaji / Komisi Tim</h2></div>
-      <form id="komisi-form" class="hide-for-user">
-        <div class="form-group"><label for="nama-karyawan">Nama Karyawan</label><input type="text" id="nama-karyawan" placeholder="Nama lengkap" required></div>
-        <div class="form-group"><label for="proyek-komisi">Proyek / Keterangan</label><input type="text" id="proyek-komisi" placeholder="Nama proyek atau keterangan" required></div>
-        <div class="form-group"><label for="nilai-komisi">Jumlah Gaji / Komisi (Rp)</label><input type="number" id="nilai-komisi" placeholder="Jumlah (Rp)" required></div>
-        <div class="form-group"><label for="status-komisi">Status</label><select id="status-komisi" required><option value="Belum Dibayar">Belum Dibayar</option><option value="Sudah Dibayar">Sudah Dibayar</option></select></div>
-        <button type="submit">Simpan Gaji</button>
-      </form>
-
-      <h3 style="margin-top:30px;">Daftar Gaji / Komisi</h3>
-      <div class="table-wrap">
-        <table><thead><tr><th>Nama Karyawan</th><th>Proyek / Keterangan</th><th>Jumlah</th><th>Status</th><th>Aksi</th></tr></thead>
-        <tbody id="komisi-list"></tbody></table>
-      </div>
-    </section>
-
-    <!-- JADWAL PROJECT (admin only) -->
-    <section id="jadwal" class="card hide-for-user">
-      <div class="card-header"><h2 class="card-title">Jadwal Project</h2></div>
-      <form id="jadwal-form" class="hide-for-user">
-        <div class="form-group"><label for="jadwal-tanggal">Tanggal</label><input type="date" id="jadwal-tanggal" required></div>
-        <div class="form-group"><label for="jadwal-project">Nama Project</label><input type="text" id="jadwal-project" required></div>
-        <div class="form-group"><label for="jadwal-pcs">Jumlah (pcs)</label><input type="number" id="jadwal-pcs" min="0" required></div>
-        <div class="form-group"><label for="jadwal-hari">Hari / Deadline</label><input type="text" id="jadwal-hari" placeholder="Contoh: Senin, 10 Nov 2025" required></div>
-        <button type="submit">Tambah Jadwal</button>
-      </form>
-
-      <h3 style="margin-top:30px;">Daftar Jadwal Project</h3>
-      <div class="table-wrap">
-        <table><thead><tr><th>Tanggal</th><th>Project</th><th>Jumlah (pcs)</th><th>Hari</th><th>Aksi</th></tr></thead>
-        <tbody id="jadwal-list"></tbody></table>
-      </div>
-    </section>
+        <div class="bg-white p-6 rounded-xl shadow-lg card">
+          <canvas id="grafikCanvas" height="100"></canvas>
+        </div>
+      </section>
+    </main>
   </div>
-
-  <footer><div class="container"><p>&copy; 2025 Jobchain Pro - Sistem Pencatatan Keuangan dan Komisi Tim</p></div></footer>
 
   <script>
-    /* =========================
-       All-in-one script:
-       - localStorage data model
-       - login (admin/user)
-       - render & CRUD for: transaksi, anggaran, rab, komisi, jadwal
-       - role-based visibility: user only sees komisi
-       ========================= */
-
-    // DEFAULT sample data
-    const DEFAULT = {
-      transaksi: [
-        { tanggal: '2023-04-15', deskripsi: 'Pembayaran Proyek A', kategori: 'Proyek', jenis: 'pemasukan', jumlah: 8500000 },
-        { tanggal: '2023-04-18', deskripsi: 'Gaji Karyawan', kategori: 'Gaji', jenis: 'pengeluaran', jumlah: 4200000 },
-        { tanggal: '2023-04-20', deskripsi: 'Pembelian Peralatan', kategori: 'Operasional', jenis: 'pengeluaran', jumlah: 2100000 }
-      ],
-      anggaran: [
-        { bulan: 'April', tahun: 2023, kategori: 'Operasional', anggaran: 5000000, terpakai: 2100000 },
-        { bulan: 'April', tahun: 2023, kategori: 'Gaji', anggaran: 5000000, terpakai: 4200000 }
-      ],
-      rab: [
-        { proyek: 'Website Perusahaan', item: 'Desain UI/UX', qty: 1, harga: 3500000, total: 3500000 },
-        { proyek: 'Website Perusahaan', item: 'Pengembangan Frontend', qty: 1, harga: 5000000, total: 5000000 },
-        { proyek: 'Website Perusahaan', item: 'Pengembangan Backend', qty: 1, harga: 6000000, total: 6000000 }
-      ],
-      komisi: [
-        { nama: 'Andi Wijaya', proyek: 'Website Perusahaan XYZ', jumlah: 1450000, status: 'Belum Dibayar' },
-        { nama: 'Budi Santoso', proyek: 'Aplikasi Mobile ABC', jumlah: 1600000, status: 'Sudah Dibayar' }
-      ],
-      jadwal: [
-        { tanggal: '2025-09-20', project: 'Project Alpha', pcs: 100, hari: 'Sabtu, 20 Sep 2025' },
-        { tanggal: '2025-10-05', project: 'Project Beta', pcs: 50, hari: 'Minggu, 5 Okt 2025' }
-      ]
+    // === Firebase ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2jBUihCiLq6FBWKuJKrpXZcUAAFm12b0",
+      authDomain: "komisi-team-tenx.firebaseapp.com",
+      databaseURL: "https://komisi-team-tenx-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "komisi-team-tenx",
+      storageBucket: "komisi-team-tenx.firebasestorage.app",
+      messagingSenderId: "129031363517",
+      appId: "1:129031363517:web:fa1b92f0f064de835b50d4"
     };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
 
-    // localStorage helpers
-    function read(key){ try{ const r = localStorage.getItem(key); return r?JSON.parse(r):null; }catch(e){return null;} }
-    function write(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+    let role = null;
+    let chart = null;
 
-    // initialize defaults if missing
-    if (!read('transaksi')) write('transaksi', DEFAULT.transaksi);
-    if (!read('anggaran')) write('anggaran', DEFAULT.anggaran);
-    if (!read('rab')) write('rab', DEFAULT.rab);
-    if (!read('komisi')) write('komisi', DEFAULT.komisi);
-    if (!read('jadwal')) write('jadwal', DEFAULT.jadwal);
-
-    // accounts
-    const ACCOUNTS = { admin: { password: 'admin123', role: 'admin'}, user: { password: 'user123', role: 'user'} };
-    let CURRENT_USER = null; // { username, role }
-
-    // DOM refs
-    const loginOverlay = document.getElementById('loginOverlay');
-    const loginBtn = document.getElementById('loginBtn');
-    const demoBtn = document.getElementById('demoBtn');
-    const loginError = document.getElementById('loginError');
-    const loginUserInput = document.getElementById('login-username');
-    const loginPassInput = document.getElementById('login-password');
-
-    const transaksiForm = document.getElementById('transaksi-form');
-    const transaksiList = document.getElementById('transaksi-list');
-    const saldoEl = document.getElementById('saldo');
-    const pemasukanEl = document.getElementById('pemasukan');
-    const pengeluaranEl = document.getElementById('pengeluaran');
-
-    const anggaranForm = document.getElementById('anggaran-form');
-    const anggaranList = document.getElementById('anggaran-list');
-
-    const rabForm = document.getElementById('rab-form');
-    const rabList = document.getElementById('rab-list');
-    const rabTotalEl = document.getElementById('rab-total');
-
-    const komisiForm = document.getElementById('komisi-form');
-    const komisiList = document.getElementById('komisi-list');
-
-    const jadwalForm = document.getElementById('jadwal-form');
-    const jadwalList = document.getElementById('jadwal-list');
-
-    const editModal = document.getElementById('editModal');
-    const editModalTitle = document.getElementById('editModalTitle');
-    const editModalBody = document.getElementById('editModalBody');
-    const editSave = document.getElementById('editSave');
-    const editCancel = document.getElementById('editCancel');
-
-    // helper
-    function fmt(num){ if(isNaN(num)) num=0; return 'Rp ' + Number(num).toLocaleString('id-ID'); }
-    function toNum(v){ const n=Number(v); return isNaN(n)?0:n; }
-    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
-    function escAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
-
-    /* ===== RENDER FUNCTIONS ===== */
-    function renderTransaksi(){
-      const data = read('transaksi')||[];
-      transaksiList.innerHTML='';
-      let saldo=0,pemasukan=0,pengeluaran=0;
-      data.forEach((t,i)=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${t.tanggal}</td>
-                        <td>${escapeHtml(t.deskripsi)}</td>
-                        <td>${escapeHtml(t.kategori)}</td>
-                        <td class="${t.jenis==='pemasukan'?'positive':'negative'}">${escapeHtml(t.jenis)}</td>
-                        <td class="${t.jenis==='pemasukan'?'positive':'negative'}">${fmt(t.jumlah)}</td>
-                        <td>
-                          <button class="action-btn hide-for-user" onclick="editTransaksi(${i})">Edit</button>
-                          <button class="action-btn hide-for-user" onclick="hapusTransaksi(${i})">Hapus</button>
-                        </td>`;
-        transaksiList.appendChild(tr);
-        if(t.jenis==='pemasukan'){ saldo+=toNum(t.jumlah); pemasukan+=toNum(t.jumlah); }
-        else { saldo-=toNum(t.jumlah); pengeluaran+=toNum(t.jumlah); }
-      });
-      saldoEl.textContent = fmt(saldo);
-      pemasukanEl.textContent = fmt(pemasukan);
-      pengeluaranEl.textContent = fmt(pengeluaran);
-      applyRoleVisibility();
+    function formatRupiah(angka){
+      const n = Number(angka ?? 0);
+      if (isNaN(n)) return "0";
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    function renderAnggaran(){
-      const data = read('anggaran')||[];
-      anggaranList.innerHTML='';
-      data.forEach((a,i)=>{
-        const sisa = toNum(a.anggaran) - toNum(a.terpakai||0);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(a.bulan)} ${escapeHtml(a.tahun)}</td>
-                        <td>${escapeHtml(a.kategori)}</td>
-                        <td>${fmt(a.anggaran)}</td>
-                        <td>${fmt(a.terpakai||0)}</td>
-                        <td class="positive">${fmt(sisa)}</td>
-                        <td>
-                          <button class="action-btn hide-for-user" onclick="editAnggaran(${i})">Edit</button>
-                          <button class="action-btn hide-for-user" onclick="hapusAnggaran(${i})">Hapus</button>
-                        </td>`;
-        anggaranList.appendChild(tr);
-      });
-      applyRoleVisibility();
+    // === Auth ===
+    function login(){
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email,password)
+        .then(()=>{
+          document.getElementById("loginPage").classList.add("hidden");
+          document.getElementById("dashboard").classList.remove("hidden");
+        })
+        .catch(()=> document.getElementById("loginError").classList.remove("hidden"));
     }
 
-    function renderRAB(){
-      const data = read('rab')||[];
-      rabList.innerHTML='';
-      let total=0;
-      data.forEach((r,i)=>{
-        total += toNum(r.total);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(r.item)}</td>
-                        <td>${r.qty}</td>
-                        <td>${fmt(r.harga)}</td>
-                        <td>${fmt(r.total)}</td>
-                        <td>
-                          <button class="action-btn hide-for-user" onclick="editRAB(${i})">Edit</button>
-                          <button class="action-btn hide-for-user" onclick="hapusRAB(${i})">Hapus</button>
-                        </td>`;
-        rabList.appendChild(tr);
-      });
-      rabTotalEl.textContent = fmt(total);
-      applyRoleVisibility();
-    }
-
-    function renderKomisi(){
-      const data = read('komisi')||[];
-      komisiList.innerHTML='';
-      data.forEach((k,i)=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(k.nama)}</td>
-                        <td>${escapeHtml(k.proyek)}</td>
-                        <td class="positive">${fmt(k.jumlah)}</td>
-                        <td>${escapeHtml(k.status)}</td>
-                        <td>
-                          ${CURRENT_USER && CURRENT_USER.role==='admin' ? `<button class="action-btn" onclick="editKomisi(${i})">Edit</button>
-                          <button class="action-btn" onclick="hapusKomisi(${i})">Hapus</button>` : ''}
-                        </td>`;
-        komisiList.appendChild(tr);
-      });
-      applyRoleVisibility();
-    }
-
-    function renderJadwal(){
-      const data = read('jadwal')||[];
-      jadwalList.innerHTML='';
-      data.forEach((j,i)=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(j.tanggal)}</td>
-                        <td>${escapeHtml(j.project)}</td>
-                        <td>${j.pcs}</td>
-                        <td>${escapeHtml(j.hari)}</td>
-                        <td>
-                          <button class="action-btn hide-for-user" onclick="editJadwal(${i})">Edit</button>
-                          <button class="action-btn hide-for-user" onclick="hapusJadwal(${i})">Hapus</button>
-                        </td>`;
-        jadwalList.appendChild(tr);
-      });
-      applyRoleVisibility();
-    }
-
-    /* ===== CRUD HANDLERS ===== */
-    // Transaksi
-    transaksiForm?.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!checkAdmin()) return;
-      const jenis = document.getElementById('jenis').value;
-      const jumlah = toNum(document.getElementById('jumlah').value);
-      const kategori = document.getElementById('kategori').value;
-      const deskripsi = document.getElementById('deskripsi').value;
-      const tanggal = document.getElementById('tanggal').value || new Date().toISOString().slice(0,10);
-      const data = read('transaksi')||[];
-      data.push({ tanggal, deskripsi, kategori, jenis, jumlah });
-      write('transaksi', data);
-      this.reset();
-      document.getElementById('tanggal').valueAsDate = new Date();
-      renderTransaksi();
-    });
-
-    function hapusTransaksi(i){
-      if(!confirm('Hapus transaksi ini?')) return;
-      const data = read('transaksi')||[];
-      data.splice(i,1);
-      write('transaksi', data);
-      renderTransaksi();
-    }
-
-    function editTransaksi(i){
-      if(!checkAdmin()) return;
-      const data = read('transaksi')||[]; const item = data[i];
-      openEditModal('Edit Transaksi', `
-        <div class="form-group"><label>Tanggal</label><input id="edit-tanggal" type="date" value="${item.tanggal}" /></div>
-        <div class="form-group"><label>Deskripsi</label><input id="edit-deskripsi" type="text" value="${escAttr(item.deskripsi)}" /></div>
-        <div class="form-group"><label>Kategori</label><input id="edit-kategori" type="text" value="${escAttr(item.kategori)}" /></div>
-        <div class="form-group"><label>Jenis</label>
-          <select id="edit-jenis"><option value="pemasukan" ${item.jenis==='pemasukan'?'selected':''}>Pemasukan</option><option value="pengeluaran" ${item.jenis==='pengeluaran'?'selected':''}>Pengeluaran</option></select></div>
-        <div class="form-group"><label>Jumlah</label><input id="edit-jumlah" type="number" value="${item.jumlah}" /></div>
-      `, ()=>{
-        item.tanggal = document.getElementById('edit-tanggal').value;
-        item.deskripsi = document.getElementById('edit-deskripsi').value;
-        item.kategori = document.getElementById('edit-kategori').value;
-        item.jenis = document.getElementById('edit-jenis').value;
-        item.jumlah = toNum(document.getElementById('edit-jumlah').value);
-        write('transaksi', data);
-        closeEditModal(); renderTransaksi();
-      });
-    }
-
-    // Anggaran
-    anggaranForm?.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!checkAdmin()) return;
-      const bulan = document.getElementById('anggaran-bulan').value;
-      const tahun = parseInt(document.getElementById('anggaran-tahun').value) || new Date().getFullYear();
-      const ang = toNum(document.getElementById('anggaran-jumlah').value);
-      const kategori = document.getElementById('anggaran-kategori').value;
-      const data = read('anggaran')||[];
-      data.push({ bulan, tahun, kategori, anggaran: ang, terpakai: 0 });
-      write('anggaran', data);
-      this.reset(); renderAnggaran();
-    });
-
-    function hapusAnggaran(i){
-      if(!confirm('Hapus anggaran ini?')) return;
-      const data = read('anggaran')||[]; data.splice(i,1); write('anggaran',data); renderAnggaran();
-    }
-
-    function editAnggaran(i){
-      if(!checkAdmin()) return;
-      const data = read('anggaran')||[]; const item = data[i];
-      openEditModal('Edit Anggaran', `
-        <div class="form-group"><label>Bulan</label><input id="edit-bulan" type="text" value="${escAttr(item.bulan)}" /></div>
-        <div class="form-group"><label>Tahun</label><input id="edit-tahun" type="number" value="${item.tahun}" /></div>
-        <div class="form-group"><label>Kategori</label><input id="edit-kategori-ang" type="text" value="${escAttr(item.kategori)}" /></div>
-        <div class="form-group"><label>Anggaran</label><input id="edit-anggaran" type="number" value="${item.anggaran}" /></div>
-        <div class="form-group"><label>Terpakai</label><input id="edit-terpakai" type="number" value="${item.terpakai||0}" /></div>
-      `, ()=>{
-        item.bulan = document.getElementById('edit-bulan').value;
-        item.tahun = parseInt(document.getElementById('edit-tahun').value)||item.tahun;
-        item.kategori = document.getElementById('edit-kategori-ang').value;
-        item.anggaran = toNum(document.getElementById('edit-anggaran').value);
-        item.terpakai = toNum(document.getElementById('edit-terpakai').value);
-        write('anggaran', data); closeEditModal(); renderAnggaran();
-      });
-    }
-
-    // RAB
-    rabForm?.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!checkAdmin()) return;
-      const proyek = document.getElementById('rab-nama').value;
-      const deskripsi = document.getElementById('rab-deskripsi').value;
-      const itemName = document.getElementById('rab-item').value;
-      const qty = parseInt(document.getElementById('rab-kuantitas').value) || 0;
-      const harga = toNum(document.getElementById('rab-harga').value);
-      const total = qty * harga;
-      const data = read('rab')||[]; data.push({ proyek, deskripsi, item: itemName, qty, harga, total }); write('rab',data); this.reset(); renderRAB();
-    });
-
-    function hapusRAB(i){ if(!confirm('Hapus item RAB ini?')) return; const data=read('rab')||[]; data.splice(i,1); write('rab',data); renderRAB(); }
-
-    function editRAB(i){ if(!checkAdmin()) return; const data=read('rab')||[]; const item=data[i];
-      openEditModal('Edit Item RAB', `
-        <div class="form-group"><label>Proyek</label><input id="edit-proyek" type="text" value="${escAttr(item.proyek)}"/></div>
-        <div class="form-group"><label>Item</label><input id="edit-item" type="text" value="${escAttr(item.item)}"/></div>
-        <div class="form-group"><label>Kuantitas</label><input id="edit-qty" type="number" value="${item.qty}"/></div>
-        <div class="form-group"><label>Harga Satuan</label><input id="edit-harga" type="number" value="${item.harga}"/></div>
-      `, ()=>{
-        item.proyek = document.getElementById('edit-proyek').value;
-        item.item = document.getElementById('edit-item').value;
-        item.qty = parseInt(document.getElementById('edit-qty').value) || 0;
-        item.harga = toNum(document.getElementById('edit-harga').value);
-        item.total = item.qty * item.harga;
-        write('rab', data); closeEditModal(); renderRAB();
-      });
-    }
-
-    // Komisi (Gaji manual)
-    komisiForm?.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!checkAdmin()) return;
-      const nama = document.getElementById('nama-karyawan').value;
-      const proyek = document.getElementById('proyek-komisi').value;
-      const jumlah = toNum(document.getElementById('nilai-komisi').value);
-      const status = document.getElementById('status-komisi').value;
-      const data = read('komisi')||[]; data.push({ nama, proyek, jumlah, status }); write('komisi', data); this.reset(); renderKomisi();
-    });
-
-    function hapusKomisi(i){ if(!confirm('Hapus data gaji/komisi ini?')) return; const data=read('komisi')||[]; data.splice(i,1); write('komisi',data); renderKomisi(); }
-    function editKomisi(i){ if(!checkAdmin()) return; const data=read('komisi')||[]; const item=data[i];
-      openEditModal('Edit Gaji / Komisi', `
-        <div class="form-group"><label>Nama</label><input id="edit-nama" type="text" value="${escAttr(item.nama)}"/></div>
-        <div class="form-group"><label>Proyek</label><input id="edit-proyek-kom" type="text" value="${escAttr(item.proyek)}"/></div>
-        <div class="form-group"><label>Jumlah (Rp)</label><input id="edit-jumlah-kom" type="number" value="${item.jumlah}"/></div>
-        <div class="form-group"><label>Status</label><select id="edit-status-kom"><option value="Belum Dibayar" ${item.status==='Belum Dibayar'?'selected':''}>Belum Dibayar</option><option value="Sudah Dibayar" ${item.status==='Sudah Dibayar'?'selected':''}>Sudah Dibayar</option></select></div>
-      `, ()=>{
-        item.nama = document.getElementById('edit-nama').value;
-        item.proyek = document.getElementById('edit-proyek-kom').value;
-        item.jumlah = toNum(document.getElementById('edit-jumlah-kom').value);
-        item.status = document.getElementById('edit-status-kom').value;
-        write('komisi', data); closeEditModal(); renderKomisi();
-      });
-    }
-
-    // Jadwal
-    jadwalForm?.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!checkAdmin()) return;
-      const tanggal = document.getElementById('jadwal-tanggal').value;
-      const project = document.getElementById('jadwal-project').value;
-      const pcs = parseInt(document.getElementById('jadwal-pcs').value) || 0;
-      const hari = document.getElementById('jadwal-hari').value;
-      const data = read('jadwal')||[]; data.push({ tanggal, project, pcs, hari }); write('jadwal',data); this.reset(); renderJadwal();
-    });
-
-    function hapusJadwal(i){ if(!confirm('Hapus jadwal ini?')) return; const data=read('jadwal')||[]; data.splice(i,1); write('jadwal',data); renderJadwal(); }
-    function editJadwal(i){ if(!checkAdmin()) return; const data=read('jadwal')||[]; const item=data[i];
-      openEditModal('Edit Jadwal', `
-        <div class="form-group"><label>Tanggal</label><input id="edit-jadwal-tanggal" type="date" value="${item.tanggal}"/></div>
-        <div class="form-group"><label>Project</label><input id="edit-jadwal-project" type="text" value="${escAttr(item.project)}"/></div>
-        <div class="form-group"><label>Jumlah (pcs)</label><input id="edit-jadwal-pcs" type="number" value="${item.pcs}"/></div>
-        <div class="form-group"><label>Hari</label><input id="edit-jadwal-hari" type="text" value="${escAttr(item.hari)}"/></div>
-      `, ()=>{
-        item.tanggal = document.getElementById('edit-jadwal-tanggal').value;
-        item.project = document.getElementById('edit-jadwal-project').value;
-        item.pcs = parseInt(document.getElementById('edit-jadwal-pcs').value) || 0;
-        item.hari = document.getElementById('edit-jadwal-hari').value;
-        write('jadwal', data); closeEditModal(); renderJadwal();
-      });
-    }
-
-    /* ===== EDIT MODAL ===== */
-    function openEditModal(title, bodyHtml, onSave){
-      editModalTitle.textContent = title;
-      editModalBody.innerHTML = bodyHtml;
-      editModal.style.display = 'flex'; editModal.setAttribute('aria-hidden','false');
-      editSave.onclick = function(){ if(typeof onSave==='function') onSave(); };
-      editCancel.onclick = closeEditModal;
-    }
-    function closeEditModal(){ editModal.style.display='none'; editModal.setAttribute('aria-hidden','true'); editModalBody.innerHTML=''; editSave.onclick=null; editCancel.onclick=null; }
-
-    /* ===== ROLE & LOGIN ===== */
-    function checkAdmin(){ if(!CURRENT_USER || CURRENT_USER.role!=='admin'){ alert('Hanya admin yang dapat melakukan aksi ini.'); return false; } return true; }
-
-    loginBtn.addEventListener('click', ()=>{
-      const u = loginUserInput.value.trim();
-      const p = loginPassInput.value.trim();
-      if(ACCOUNTS[u] && ACCOUNTS[u].password === p){
-        CURRENT_USER = { username: u, role: ACCOUNTS[u].role };
-        loginOverlay.style.display = 'none';
-        afterLogin();
-      } else { loginError.textContent = 'Username atau password salah.'; }
-    });
-
-    demoBtn.addEventListener('click', ()=>{
-      // quick demo as user
-      loginUserInput.value='user'; loginPassInput.value='user123'; demoBtn.disabled=true; loginBtn.click();
-    });
-
-    function applyRoleVisibility(){
-      // If user -> hide all hide-for-user elements and header nav; show only komisi
-      if(CURRENT_USER && CURRENT_USER.role === 'user'){
-        // hide nav
-        document.getElementById('mainNav').classList.add('nav-hidden');
-        // hide every element that has class hide-for-user
-        document.querySelectorAll('.hide-for-user').forEach(el=>el.style.display='none');
-        // also hide all other .card sections except komisi
-        document.querySelectorAll('.container > section.card').forEach(sec=>{
-          if(sec.id !== 'komisi') sec.style.display='none';
-          else sec.style.display='block';
-        });
-        // ensure komisi form not shown to user
-        document.getElementById('komisi-form') && (document.getElementById('komisi-form').style.display='none');
-        // hide summary area
-        document.getElementById('summaryAndAddSection') && (document.getElementById('summaryAndAddSection').style.display='none');
-      } else {
-        // admin: show everything back
-        document.getElementById('mainNav').classList.remove('nav-hidden');
-        document.querySelectorAll('.hide-for-user').forEach(el=>el.style.display='');
-        document.querySelectorAll('.container > section.card').forEach(sec=>sec.style.display='');
-        document.getElementById('komisi-form') && (document.getElementById('komisi-form').style.display='');
-        document.getElementById('summaryAndAddSection') && (document.getElementById('summaryAndAddSection').style.display='grid');
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        if(user.email === "admin@gmail.com"){ 
+          role = "admin";
+          document.getElementById("adminMenu").classList.remove("hidden");
+          document.getElementById("adminGajiForm").classList.remove("hidden");
+          document.getElementById("exportBtn").classList.remove("hidden");
+          loadGaji(true); loadKeuangan(); loadRAB();
+        } else {
+          role = "user";
+          document.getElementById("userMenu").classList.remove("hidden");
+          loadGaji(false);
+        }
+        showPage('gajiPage');
       }
-      // hide edit/delete buttons if user (already hidden by hide-for-user) - Komisi edit/delete handled in renderKomisi
+    });
+
+    function logout(){ auth.signOut(); location.reload(); }
+
+    // === Page Switch ===
+    function showPage(id){
+      ['gajiPage','keuanganPage','rabPage','grafikPage'].forEach(p=>{
+        document.getElementById(p).classList.add("hidden");
+      });
+      document.getElementById(id).classList.remove("hidden");
     }
 
-    function afterLogin(){
-      // default date
-      const tEl = document.getElementById('tanggal'); if(tEl) tEl.valueAsDate = new Date();
-      const jtEl = document.getElementById('jadwal-tanggal'); if(jtEl) jtEl.valueAsDate = new Date();
-      applyRoleVisibility();
-      // initial render for all
-      renderTransaksi(); renderAnggaran(); renderRAB(); renderKomisi(); renderJadwal();
-      // if user -> scroll to komisi
-      if(CURRENT_USER.role === 'user'){ document.getElementById('komisi').scrollIntoView({behavior:'smooth'}); }
-      else { document.getElementById('pencatatan').scrollIntoView({behavior:'auto'}); }
+    // === Gaji ===
+    function tambahGaji(){
+      const nama = document.getElementById("nama").value;
+      const jumlah = parseInt(document.getElementById("jumlah").value);
+      const bayaran = parseInt(document.getElementById("bayaran").value);
+      const total = jumlah * bayaran;
+      db.ref("gaji").push({ nama,jumlah,bayaran,total,cashout:0,sisa:total });
     }
 
-    /* ===== startup ===== */
-    window.onload = function(){
-      loginUserInput.focus();
-      // render initial (so UI not empty even before login)
-      renderTransaksi(); renderAnggaran(); renderRAB(); renderKomisi(); renderJadwal();
-    };
+    function cashoutGaji(id,item){
+      const jumlah = parseInt(prompt("Cashout nominal:"));
+      if(!isNaN(jumlah)){
+        const cashout = (item.cashout||0)+jumlah;
+        const sisa = item.total - cashout;
+        db.ref("gaji/"+id).update({cashout,sisa});
+      }
+    }
 
-    /* expose functions for inline handlers */
-    window.hapusTransaksi = hapusTransaksi; window.editTransaksi = editTransaksi;
-    window.hapusAnggaran = hapusAnggaran; window.editAnggaran = editAnggaran;
-    window.hapusRAB = hapusRAB; window.editRAB = editRAB;
-    window.hapusKomisi = hapusKomisi; window.editKomisi = editKomisi;
-    window.hapusJadwal = hapusJadwal; window.editJadwal = editJadwal;
+    function editGaji(id,item){
+      const nama = prompt("Nama:", item.nama);
+      const jumlah = parseInt(prompt("Jumlah:", item.jumlah));
+      const bayaran = parseInt(prompt("Bayaran:", item.bayaran));
+      if(!isNaN(jumlah) && !isNaN(bayaran)){
+        const total = jumlah*bayaran;
+        const sisa = total - (item.cashout||0);
+        db.ref("gaji/"+id).set({
+          nama,jumlah,bayaran,total,
+          cashout:(item.cashout||0),
+          sisa
+        });
+      }
+    }
+
+    function hapusGaji(id){ db.ref("gaji/"+id).remove(); }
+
+    function loadGaji(isAdmin){
+      db.ref("gaji").on("value",snap=>{
+        const tbody = document.getElementById("gajiTable");
+        tbody.innerHTML="";
+        snap.forEach(c=>{
+          const item=c.val();
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td class="p-3">${item.nama}</td>
+            <td class="p-3">${item.jumlah}</td>
+            <td class="p-3">Rp${formatRupiah(item.bayaran)}</td>
+            <td class="p-3">Rp${formatRupiah(item.total)}</td>
+            <td class="p-3">Rp${formatRupiah(item.cashout||0)}</td>
+            <td class="p-3">Rp${formatRupiah(item.sisa)}</td>
+            <td class="p-3">${isAdmin?`
+              <button onclick='cashoutGaji("${c.key}",${JSON.stringify(item)})' class="text-green-600">Cashout</button>
+              <button onclick='editGaji("${c.key}",${JSON.stringify(item)})' class="text-blue-600">Edit</button>
+              <button onclick='hapusGaji("${c.key}")' class="text-red-600">Hapus</button>
+            `:"-"}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function exportGajiCSV(){
+      db.ref("gaji").once("value",snap=>{
+        let csv="Nama,Jumlah,Bayaran,Total,Cashout,Sisa\n";
+        snap.forEach(c=>{
+          const i=c.val();
+          csv+=`${i.nama},${i.jumlah},${i.bayaran},${i.total},${i.cashout},${i.sisa}\n`;
+        });
+        const blob=new Blob([csv],{type:"text/csv"});
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="gaji.csv";
+        a.click();
+      });
+    }
+
+    // === Keuangan ===
+    function tambahKeuangan(){
+      const data = {
+        jenis: document.getElementById("jenis").value,
+        nominal: parseInt(document.getElementById("nominal").value),
+        keterangan: document.getElementById("keterangan").value,
+        tanggal: new Date().toISOString().split("T")[0]
+      };
+      db.ref("keuangan").push(data);
+    }
+
+    function editKeuangan(id,item){
+      const jenis = prompt("Jenis (pemasukan/pengeluaran):", item.jenis);
+      const nominalRaw = prompt("Nominal:", item.nominal);
+      const keterangan = prompt("Keterangan:", item.keterangan);
+      if(jenis && nominalRaw && keterangan){
+        const nominal = Number((nominalRaw+"").replace(/[^\d\-]/g,'')) || 0;
+        db.ref("keuangan/"+id).set({
+          jenis, nominal, keterangan,
+          tanggal: item.tanggal
+        });
+      }
+    }
+
+    function loadKeuangan(){
+      db.ref("keuangan").on("value",snap=>{
+        const tbody=document.getElementById("keuanganTable"); tbody.innerHTML="";
+        let pemasukan=0, pengeluaran=0; let data=[];
+        snap.forEach(c=>{
+          const k=c.val();
+          if(k.jenis==="pemasukan") pemasukan+=k.nominal;
+          else pengeluaran+=k.nominal;
+          data.push(k);
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td class="p-3">${k.jenis}</td>
+            <td class="p-3">Rp${formatRupiah(k.nominal)}</td>
+            <td class="p-3">${k.keterangan}</td>
+            <td class="p-3">${k.tanggal}</td>
+            <td class="p-3">
+              <button onclick='editKeuangan("${c.key}",${JSON.stringify(k)})' class="text-blue-600">Edit</button>
+              <button onclick='hapusKeuangan("${c.key}")' class="text-red-600">Hapus</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+        updateGrafik(pemasukan,pengeluaran);
+      });
+    }
+
+    function hapusKeuangan(id){ db.ref("keuangan/"+id).remove(); }
+
+    // === RAB ===
+    function tambahRAB(){
+      const data = {
+        rencana: document.getElementById("rencana").value,
+        anggaran: parseInt(document.getElementById("anggaran").value),
+        tanggal: new Date().toISOString().split("T")[0]
+      };
+      db.ref("rab").push(data);
+    }
+
+    function editRAB(id,item){
+      const rencana = prompt("Rencana:", item.rencana);
+      const anggaran = parseInt(prompt("Anggaran:", item.anggaran));
+      if(rencana && !isNaN(anggaran)){
+        db.ref("rab/"+id).set({
+          rencana, anggaran, tanggal: item.tanggal
+        });
+      }
+    }
+
+    function hapusRAB(id){ db.ref("rab/"+id).remove(); }
+
+    function loadRAB(){
+      db.ref("rab").on("value",snap=>{
+        const tbody=document.getElementById("rabTable"); tbody.innerHTML="";
+        snap.forEach(c=>{
+          const r=c.val();
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td class="p-3">${r.rencana}</td>
+            <td class="p-3">Rp${formatRupiah(r.anggaran)}</td>
+            <td class="p-3">${r.tanggal}</td>
+            <td class="p-3">
+              <button onclick='editRAB("${c.key}",${JSON.stringify(r)})' class="text-blue-600">Edit</button>
+              <button onclick='hapusRAB("${c.key}")' class="text-red-600">Hapus</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    // === Grafik ===
+    function updateGrafik(pemasukan,pengeluaran){
+      const saldo=pemasukan-pengeluaran;
+      document.getElementById("totalPemasukan").textContent="Rp"+formatRupiah(pemasukan);
+      document.getElementById("totalPengeluaran").textContent="Rp"+formatRupiah(pengeluaran);
+      document.getElementById("saldo").textContent="Rp"+formatRupiah(saldo);
+
+      const ctx=document.getElementById("grafikCanvas").getContext("2d");
+      if(chart) chart.destroy();
+      chart=new Chart(ctx,{
+        type:"bar",
+        data:{labels:["Pemasukan","Pengeluaran","Saldo"],
+          datasets:[{label:"Keuangan",data:[pemasukan,pengeluaran,saldo],
+            backgroundColor:["#10b981","#ef4444","#3b82f6"]}]}
+      });
+    }
   </script>
 </body>
 </html>

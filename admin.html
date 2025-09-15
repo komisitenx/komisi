@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
+  <style>
+    body { margin:0; font-family:Arial, sans-serif; }
+    .sidebar { width:220px; background:#343a40; color:white; position:fixed; top:0; bottom:0; padding:20px; }
+    .sidebar h2 { color:#ffc107; }
+    .sidebar a { display:block; color:white; text-decoration:none; margin:15px 0; }
+    .sidebar a:hover { color:#ffc107; }
+    .main { margin-left:240px; padding:20px; }
+    .card { background:white; padding:20px; margin-bottom:20px; border-radius:8px; box-shadow:0 0 6px rgba(0,0,0,0.2); }
+    button { padding:8px 16px; border:none; border-radius:4px; background:#007bff; color:white; cursor:pointer; }
+    button:hover { background:#0056b3; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="#keuangan">Pencatatan Keuangan</a>
+    <a href="#anggaran">Rencana Anggaran</a>
+    <a href="#rab">RAB</a>
+    <a href="#komisi">Komisi Team</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+
+  <div class="main">
+    <h1>Dashboard Admin</h1>
+
+    <div id="keuangan" class="card">
+      <h3>Pencatatan Keuangan</h3>
+      <input type="text" id="descKeuangan" placeholder="Deskripsi">
+      <input type="number" id="amountKeuangan" placeholder="Jumlah">
+      <button onclick="tambahKeuangan()">Tambah</button>
+      <ul id="listKeuangan"></ul>
+    </div>
+
+    <div id="anggaran" class="card">
+      <h3>Rencana Anggaran</h3>
+      <input type="text" id="descAnggaran" placeholder="Deskripsi">
+      <input type="number" id="amountAnggaran" placeholder="Jumlah">
+      <button onclick="tambahAnggaran()">Tambah</button>
+      <ul id="listAnggaran"></ul>
+    </div>
+
+    <div id="rab" class="card">
+      <h3>RAB</h3>
+      <input type="text" id="descRab" placeholder="Deskripsi">
+      <input type="number" id="amountRab" placeholder="Jumlah">
+      <button onclick="tambahRab()">Tambah</button>
+      <ul id="listRab"></ul>
+    </div>
+
+    <div id="komisi" class="card">
+      <h3>Komisi Team</h3>
+      <input type="text" id="namaKomisi" placeholder="Nama">
+      <input type="number" id="jumlahKomisi" placeholder="Jumlah">
+      <button onclick="tambahKomisi()">Tambah</button>
+      <ul id="listKomisi"></ul>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    auth.onAuthStateChanged(user => {
+      if (!user) window.location.href = "index.html";
+    });
+
+    function logout() { auth.signOut().then(() => window.location.href="index.html"); }
+
+    function tambahKeuangan() {
+      const desc = document.getElementById("descKeuangan").value;
+      const amount = document.getElementById("amountKeuangan").value;
+      db.ref("keuangan").push({ desc, amount });
+    }
+
+    db.ref("keuangan").on("value", snapshot => {
+      const list = document.getElementById("listKeuangan");
+      list.innerHTML = "";
+      snapshot.forEach(child => {
+        const li = document.createElement("li");
+        li.textContent = child.val().desc + " - Rp " + child.val().amount;
+        list.appendChild(li);
+      });
+    });
+
+    function tambahAnggaran() {
+      const desc = document.getElementById("descAnggaran").value;
+      const amount = document.getElementById("amountAnggaran").value;
+      db.ref("anggaran").push({ desc, amount });
+    }
+
+    db.ref("anggaran").on("value", snapshot => {
+      const list = document.getElementById("listAnggaran");
+      list.innerHTML = "";
+      snapshot.forEach(child => {
+        const li = document.createElement("li");
+        li.textContent = child.val().desc + " - Rp " + child.val().amount;
+        list.appendChild(li);
+      });
+    });
+
+    function tambahRab() {
+      const desc = document.getElementById("descRab").value;
+      const amount = document.getElementById("amountRab").value;
+      db.ref("rab").push({ desc, amount });
+    }
+
+    db.ref("rab").on("value", snapshot => {
+      const list = document.getElementById("listRab");
+      list.innerHTML = "";
+      snapshot.forEach(child => {
+        const li = document.createElement("li");
+        li.textContent = child.val().desc + " - Rp " + child.val().amount;
+        list.appendChild(li);
+      });
+    });
+
+    function tambahKomisi() {
+      const nama = document.getElementById("namaKomisi").value;
+      const jumlah = document.getElementById("jumlahKomisi").value;
+      db.ref("komisi").push({ nama, jumlah });
+    }
+
+    db.ref("komisi").on("value", snapshot => {
+      const list = document.getElementById("listKomisi");
+      list.innerHTML = "";
+      snapshot.forEach(child => {
+        const li = document.createElement("li");
+        li.textContent = child.val().nama + " - Rp " + child.val().jumlah;
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
