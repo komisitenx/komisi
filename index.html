@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TENX SISTEM - Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TENX SISTEM - Dashboard (Final)</title>
 
   <!-- Tailwind + Font -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,31 +17,26 @@
 
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .sidebar { width: 240px; transition: transform 0.3s ease; }
+    .sidebar { width: 240px; transition: transform 0.25s ease; }
     .sidebar-hidden { transform: translateX(-100%); }
-    .menu-item.active {
-      background: rgba(255,255,255,0.12);
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(2,6,23,0.08);
-    }
+    .menu-item.active { background: rgba(255,255,255,0.08); border-radius: 8px; }
     table tbody tr:nth-child(even) { background-color: #f8fafc; }
     table tbody tr:hover { background-color: #f1f5f9; }
     .card { background: white; border-radius: 12px; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      display: none; z-index: 30;
-    }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; z-index: 50; }
     .overlay.active { display: block; }
+    .fade-in { animation: fadeIn 0.6s ease-in-out; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+    .small-input { width:110px; }
+    .tiny { font-size:12px; padding:6px 8px; }
   </style>
 </head>
 <body class="bg-gray-50">
 
   <!-- Login Page -->
-  <div id="loginPage" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-500 to-indigo-600">
+  <div id="loginPage" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-sky-500 to-indigo-600 fade-in">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
-      <h1 class="text-1xl font-extrabold mb-6 text-center text-sky-600">
-        SEMANGAT GUYS LOGIN user@gmail.com/user123
-      </h1>
+      <h1 class="text-1xl font-extrabold mb-6 text-center text-sky-600">SEMANGAT GUYS , LOGIN user@gmail.com/user123</h1>
       <input id="email" type="email" placeholder="Email" class="w-full mb-3 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
       <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
       <button onclick="login()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg font-semibold transition">Login</button>
@@ -50,10 +45,8 @@
   </div>
 
   <!-- Dashboard -->
-  <div id="dashboard" class="hidden h-screen flex relative">
-
-    <!-- Overlay untuk mobile -->
-    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+  <div id="dashboard" class="hidden h-screen flex relative fade-in">
+    <div id="overlay" class="overlay" onclick="closeModal()"></div>
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen fixed md:static z-40 sidebar-hidden md:translate-x-0">
@@ -65,11 +58,13 @@
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('keuanganPage')">Keuangan</div>
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('rabPage')">RAB</div>
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('grafikPage')">Grafik</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('projectPage')">Project Kaos Kelas</div>
       </nav>
 
       <!-- User Menu -->
       <nav id="userMenu" class="space-y-2 hidden">
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')">Gaji</div>
+        <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('projectPage')">Project Kaos Kelas</div>
       </nav>
 
       <div class="mt-auto">
@@ -80,36 +75,40 @@
     <!-- Main Content -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full md:ml-0 ml-0">
 
-      <!-- Header dengan tombol hamburger -->
+      <!-- Header hamburger -->
       <div class="flex items-center justify-between mb-6 md:hidden">
         <button onclick="toggleSidebar()" class="text-sky-700 text-2xl">☰</button>
         <h1 class="text-xl font-bold text-sky-700">Dashboard</h1>
       </div>
 
       <!-- Gaji Page -->
-      <section id="gajiPage" class="hidden">
+      <section id="gajiPage" class="hidden fade-in">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-sky-700">Daftar Gaji</h2>
+          <h2 class="text-2xl font-bold text-sky-700">Daftar Komisi</h2>
           <button id="exportBtn" onclick="exportGajiCSV()" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
         </div>
 
-        <div id="adminGajiForm" class="mb-6 hidden flex flex-col md:flex-row gap-2">
+        <div id="adminGajiForm" class="mb-4 hidden flex flex-col md:flex-row gap-2">
           <input id="nama" placeholder="Nama" class="p-2 border rounded-lg flex-1">
           <input id="jumlah" type="number" placeholder="Jumlah" class="p-2 border rounded-lg md:w-28 w-full">
           <input id="bayaran" type="number" placeholder="Bayaran" class="p-2 border rounded-lg md:w-32 w-full">
           <button onclick="tambahGaji()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
+        <div class="mb-3">
+          <input id="searchGaji" oninput="filterTable('gajiTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+        </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full card overflow-hidden text-sm">
+          <table class="w-full card overflow-hidden text-sm" id="gajiTableWrapper">
             <thead class="bg-sky-600 text-white">
               <tr>
                 <th class="p-3 text-left">Nama</th>
                 <th class="p-3">Jumlah</th>
-                <th class="p-3">Bayaran</th>
+                <th class="p-3">Komisi</th>
                 <th class="p-3">Total</th>
                 <th class="p-3">Cashout</th>
-                <th class="p-3">Sisa</th>
+                <th class="p-3">Saldo</th>
                 <th class="p-3">Aksi</th>
               </tr>
             </thead>
@@ -118,10 +117,51 @@
         </div>
       </section>
 
-      <!-- Keuangan Page -->
-      <section id="keuanganPage" class="hidden">
-        <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan Keuangan</h2>
+      <!-- Project Kaos Kelas Page -->
+      <section id="projectPage" class="hidden fade-in">
+        <h2 class="text-2xl font-bold mb-6 text-sky-700">Project Kaos Kelas</h2>
 
+        <div id="adminProjectForm" class="mb-6 hidden flex flex-col md:flex-row gap-2">
+          <input id="projectNama" placeholder="Nama Kaos Kelas" class="p-2 border rounded-lg flex-1">
+          <input id="projectJumlah" type="number" placeholder="Jumlah" class="p-2 border rounded-lg md:w-28 w-full">
+          <select id="projectStatusProses" class="p-2 border rounded-lg">
+            <option value="Desain">Desain</option>
+            <option value="Done">Done</option>
+          </select>
+          <select id="projectPembayaran" class="p-2 border rounded-lg">
+            <option value="DP">DP</option>
+            <option value="Lunas">Lunas</option>
+          </select>
+          <input id="projectDeadline" type="date" class="p-2 border rounded-lg">
+          <input id="projectTelp" placeholder="Nomor Telepon Pembeli" class="p-2 border rounded-lg md:w-40 w-full">
+          <button onclick="tambahProject()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
+        </div>
+
+        <div class="mb-3">
+          <input id="searchProject" oninput="filterTable('projectTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full card overflow-hidden text-sm">
+            <thead class="bg-sky-600 text-white">
+              <tr>
+                <th class="p-3">Nama Kelas</th>
+                <th class="p-3">Jumlah</th>
+                <th class="p-3">Proses</th>
+                <th class="p-3">Pembayaran</th>
+                <th class="p-3">Deadline</th>
+                <th class="p-3">Telepon</th>
+                <th class="p-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="projectTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Keuangan Page -->
+      <section id="keuanganPage" class="hidden fade-in">
+        <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan Keuangan</h2>
         <div class="mb-6 flex flex-col md:flex-row gap-2">
           <select id="jenis" class="p-2 border rounded-lg">
             <option value="pemasukan">Pemasukan</option>
@@ -132,81 +172,81 @@
           <button onclick="tambahKeuangan()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full card overflow-hidden text-sm">
-            <thead class="bg-sky-600 text-white">
-              <tr>
-                <th class="p-3">Jenis</th>
-                <th class="p-3">Nominal</th>
-                <th class="p-3">Keterangan</th>
-                <th class="p-3">Tanggal</th>
-                <th class="p-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="keuanganTable"></tbody>
-          </table>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="mb-2 font-bold">Pemasukan</h3>
+            <input id="searchPemasukan" oninput="filterTable('pemasukanTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full mb-2">
+            <div class="overflow-x-auto">
+              <table class="w-full card overflow-hidden text-sm">
+                <thead class="bg-sky-600 text-white"><tr><th class="p-3">Jenis</th><th class="p-3">Nominal</th><th class="p-3">Keterangan</th><th class="p-3">Tanggal</th><th class="p-3">Aksi</th></tr></thead>
+                <tbody id="pemasukanTable"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="mb-2 font-bold">Pengeluaran</h3>
+            <input id="searchPengeluaran" oninput="filterTable('pengeluaranTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full mb-2">
+            <div class="overflow-x-auto">
+              <table class="w-full card overflow-hidden text-sm">
+                <thead class="bg-sky-600 text-white"><tr><th class="p-3">Jenis</th><th class="p-3">Nominal</th><th class="p-3">Keterangan</th><th class="p-3">Tanggal</th><th class="p-3">Aksi</th></tr></thead>
+                <tbody id="pengeluaranTable"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- RAB Page -->
-      <section id="rabPage" class="hidden">
+      <section id="rabPage" class="hidden fade-in">
         <h2 class="text-2xl font-bold mb-6 text-sky-700">Catatan RAB</h2>
-
         <div class="mb-6 flex flex-col md:flex-row gap-2">
           <input id="rencana" placeholder="Rencana" class="p-2 border rounded-lg flex-1">
           <input id="anggaran" type="number" placeholder="Anggaran" class="p-2 border rounded-lg md:w-40 w-full">
           <button onclick="tambahRAB()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
+        <div class="mb-3">
+          <input id="searchRAB" oninput="filterTable('rabTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full card overflow-hidden text-sm">
-            <thead class="bg-sky-600 text-white">
-              <tr>
-                <th class="p-3">Rencana</th>
-                <th class="p-3">Anggaran</th>
-                <th class="p-3">Tanggal</th>
-                <th class="p-3">Aksi</th>
-              </tr>
-            </thead>
+            <thead class="bg-sky-600 text-white"><tr><th class="p-3">Rencana</th><th class="p-3">Anggaran</th><th class="p-3">Tanggal</th><th class="p-3">Aksi</th></tr></thead>
             <tbody id="rabTable"></tbody>
           </table>
         </div>
       </section>
 
       <!-- Grafik Page -->
-      <section id="grafikPage" class="hidden">
+      <section id="grafikPage" class="hidden fade-in">
         <h2 class="text-2xl font-bold mb-6 text-sky-700">Grafik Keuangan</h2>
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="bg-green-100 p-5 rounded-xl shadow card">
-            <h3 class="font-bold text-green-700">Total Pemasukan</h3>
-            <p id="totalPemasukan" class="text-2xl font-extrabold"></p>
-          </div>
-          <div class="bg-red-100 p-5 rounded-xl shadow card">
-            <h3 class="font-bold text-red-700">Total Pengeluaran</h3>
-            <p id="totalPengeluaran" class="text-2xl font-extrabold"></p>
-          </div>
-          <div class="bg-blue-100 p-5 rounded-xl shadow card">
-            <h3 class="font-bold text-blue-700">Saldo</h3>
-            <p id="saldo" class="text-2xl font-extrabold"></p>
-          </div>
+          <div class="bg-green-100 p-5 rounded-xl shadow card"><h3 class="font-bold text-green-700">Total Pemasukan</h3><p id="totalPemasukan" class="text-2xl font-extrabold"></p></div>
+          <div class="bg-red-100 p-5 rounded-xl shadow card"><h3 class="font-bold text-red-700">Total Pengeluaran</h3><p id="totalPengeluaran" class="text-2xl font-extrabold"></p></div>
+          <div class="bg-blue-100 p-5 rounded-xl shadow card"><h3 class="font-bold text-blue-700">Saldo</h3><p id="saldo" class="text-2xl font-extrabold"></p></div>
         </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-lg card">
-          <canvas id="grafikCanvas" height="100"></canvas>
-        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg card"><canvas id="grafikCanvas" height="100"></canvas></div>
       </section>
+
     </main>
+  </div>
+
+  <!-- Modal Container (used for edit forms if needed) -->
+  <div id="modalContainer" class="overlay" onclick="closeModal()">
+    <div id="modal" class="max-w-lg mx-auto mt-24 bg-white rounded-lg p-6 shadow-lg" onclick="event.stopPropagation()" style="display:none;">
+      <h3 id="modalTitle" class="text-lg font-bold mb-3"></h3>
+      <div id="modalBody"></div>
+      <div class="mt-4 text-right">
+        <button onclick="closeModal()" class="mr-2 px-4 py-2 rounded bg-gray-200">Batal</button>
+        <button id="modalSaveBtn" onclick="modalSave()" class="px-4 py-2 rounded bg-sky-600 text-white">Simpan</button>
+      </div>
+    </div>
   </div>
 
   <script>
     // === Sidebar Toggle (Mobile) ===
-    function toggleSidebar(){
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("overlay");
-      sidebar.classList.toggle("sidebar-hidden");
-      overlay.classList.toggle("active");
-    }
+    function toggleSidebar(){ const sidebar=document.getElementById('sidebar'); sidebar.classList.toggle('sidebar-hidden'); }
 
     // === Firebase ===
     const firebaseConfig = {
@@ -214,7 +254,7 @@
       authDomain: "komisi-team-tenx.firebaseapp.com",
       databaseURL: "https://komisi-team-tenx-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "komisi-team-tenx",
-      storageBucket: "komisi-team-tenx.firebasestorage.app",
+      storageBucket: "komisi-team-tenx.firebasedestorage.app",
       messagingSenderId: "129031363517",
       appId: "1:129031363517:web:fa1b92f0f064de835b50d4"
     };
@@ -222,205 +262,128 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    let role = null;
+    let role = null; // 'admin' or 'user'
     let chart = null;
+    let modalContext = null;
 
-    function formatRupiah(angka){
-      const n = Number(angka ?? 0);
-      if (isNaN(n)) return "0";
-      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
+    function formatRupiah(angka){ const n = Number(angka ?? 0); if (isNaN(n)) return "0"; return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
     // === Auth ===
     function login(){
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
       auth.signInWithEmailAndPassword(email,password)
-        .then(()=>{
-          document.getElementById("loginPage").classList.add("hidden");
-          document.getElementById("dashboard").classList.remove("hidden");
-        })
-        .catch(()=> document.getElementById("loginError").classList.remove("hidden"));
+        .then(()=>{ document.getElementById('loginPage').classList.add('hidden'); document.getElementById('dashboard').classList.remove('hidden'); })
+        .catch(()=> document.getElementById('loginError').classList.remove('hidden'));
     }
 
     auth.onAuthStateChanged(user=>{
       if(user){
-        if(user.email === "admin@gmail.com"){ 
-          role = "admin";
-          document.getElementById("adminMenu").classList.remove("hidden");
-          document.getElementById("adminGajiForm").classList.remove("hidden");
-          document.getElementById("exportBtn").classList.remove("hidden");
-          loadGaji(true); loadKeuangan(); loadRAB();
-        } else {
-          role = "user";
-          document.getElementById("userMenu").classList.remove("hidden");
-          loadGaji(false);
-        }
+        if(user.email === 'admin@gmail.com'){ role='admin'; showAdminMenu(); loadAllRealtime(); }
+        else { role='user'; showUserMenu(); loadGaji(false); loadProject(false); }
         showPage('gajiPage');
-      }
+      } else { document.getElementById('loginPage').classList.remove('hidden'); document.getElementById('dashboard').classList.add('hidden'); }
     });
 
     function logout(){ auth.signOut(); location.reload(); }
 
-    // === Page Switch ===
-    function showPage(id){
-      ['gajiPage','keuanganPage','rabPage','grafikPage'].forEach(p=>{
-        document.getElementById(p).classList.add("hidden");
-      });
-      document.getElementById(id).classList.remove("hidden");
-    }
+    function showAdminMenu(){ document.getElementById('adminMenu').classList.remove('hidden'); document.getElementById('adminGajiForm').classList.remove('hidden'); document.getElementById('exportBtn').classList.remove('hidden'); document.getElementById('adminProjectForm').classList.remove('hidden'); }
+    function showUserMenu(){ document.getElementById('userMenu').classList.remove('hidden'); }
+
+    function showPage(id){ ['gajiPage','keuanganPage','rabPage','grafikPage','projectPage'].forEach(p=>{document.getElementById(p).classList.add('hidden');}); document.getElementById(id).classList.remove('hidden'); }
+
+    // === Realtime loaders ===
+    function loadAllRealtime(){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); }
 
     // === Gaji ===
-    function tambahGaji(){
-      const nama = document.getElementById("nama").value;
-      const jumlah = parseInt(document.getElementById("jumlah").value);
-      const bayaran = parseInt(document.getElementById("bayaran").value);
-      const total = jumlah * bayaran;
-      db.ref("gaji").push({ nama,jumlah,bayaran,total,cashout:0,sisa:total });
-    }
+    function tambahGaji(){ const nama=document.getElementById('nama').value; const jumlah=parseInt(document.getElementById('jumlah').value); const bayaran=parseInt(document.getElementById('bayaran').value); if(!nama||!jumlah||!bayaran) return alert('Lengkapi form'); db.ref('gaji').push({nama,jumlah,bayaran,cashout:0}).then(()=>{ document.getElementById('nama').value=''; document.getElementById('jumlah').value=''; document.getElementById('bayaran').value=''; }); }
 
-    function cashoutGaji(id,item){
-      const jumlah = parseInt(prompt("Cashout nominal:"));
-      if(!isNaN(jumlah)){
-        const cashout = (item.cashout||0)+jumlah;
-        const sisa = item.total - cashout;
-        db.ref("gaji/"+id).update({cashout,sisa});
-      }
-    }
+    function loadGaji(isAdmin){ const tbody=document.getElementById('gajiTable'); tbody.innerHTML=''; db.ref('gaji').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const total=(data.jumlah*data.bayaran); const sisa=(total - (data.cashout||0)); const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML = `
+        <td class="p-3">${data.nama}</td>
+        <td class="p-3">${data.jumlah}</td>
+        <td class="p-3">${formatRupiah(data.bayaran)}</td>
+        <td class="p-3">${formatRupiah(total)}</td>
+        <td class="p-3">${formatRupiah(data.cashout||0)}</td>
+        <td class="p-3">${formatRupiah(sisa)}</td>
+        <td class="p-3">
+          ${isAdmin?`
+            <div class=\"flex items-center gap-2\"> 
+              <input id=\"cashoutInput-${key}\" type=\"number\" min=0 placeholder=\"0\" class=\"p-1 border rounded small-input\"> 
+              <button onclick=\"cashoutGaji('${key}')\" class=\"tiny bg-blue-500 text-white rounded\">Cashout</button>
+              <button onclick=\"editGajiNominal('${key}')\" class=\"tiny bg-yellow-400 rounded\">Edit Nominal</button>
+              <button onclick=\"editGajiCashout('${key}')\" class=\"tiny bg-amber-500 rounded\">Edit Cashout</button>
+              <button onclick=\"hapusGaji('${key}')\" class=\"tiny bg-red-500 text-white rounded\">Hapus</button>
+            </div>` : `-`}
+        </td>
+      `; tbody.appendChild(tr); }); }); }
 
-    function editGaji(id,item){
-      const nama = prompt("Nama:", item.nama);
-      const jumlah = parseInt(prompt("Jumlah:", item.jumlah));
-      const bayaran = parseInt(prompt("Bayaran:", item.bayaran));
-      if(!isNaN(jumlah) && !isNaN(bayaran)){
-        const total = jumlah*bayaran;
-        const sisa = total - (item.cashout||0);
-        db.ref("gaji/"+id).set({
-          nama,jumlah,bayaran,total,
-          cashout:(item.cashout||0),
-          sisa
-        });
-      }
-    }
+    // Cashout without prompt - uses transaction to add cashout amount
+    function cashoutGaji(key){ const input=document.getElementById('cashoutInput-'+key); const val=parseInt(input?.value || 0); if(!val || val<=0) return alert('Masukkan nominal cashout > 0'); const cashoutRef=db.ref('gaji/'+key+'/cashout'); cashoutRef.transaction(current=>{ return (current||0) + val; }, ()=>{ input.value=''; }); }
 
-    function hapusGaji(id){ db.ref("gaji/"+id).remove(); }
+    // Edit nominal (jumlah & bayaran) - opens prompt (nominal prompt allowed by spec)
+    function editGajiNominal(key){ db.ref('gaji/'+key).once('value').then(snap=>{ const d=snap.val(); const newNama=prompt('Nama:', d.nama); const newJumlah=parseInt(prompt('Jumlah:', d.jumlah)); const newBayaran=parseInt(prompt('Bayaran:', d.bayaran)); if(newNama && !isNaN(newJumlah) && !isNaN(newBayaran)){ db.ref('gaji/'+key).update({nama:newNama,jumlah:newJumlah,bayaran:newBayaran}); } }); }
 
-    function loadGaji(isAdmin){
-      db.ref("gaji").on("value",snap=>{
-        const tbody = document.getElementById("gajiTable");
-        tbody.innerHTML="";
-        snap.forEach(c=>{
-          const item=c.val();
-          const tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td class="p-3">${item.nama}</td>
-            <td class="p-3">${item.jumlah}</td>
-            <td class="p-3">Rp${formatRupiah(item.bayaran)}</td>
-            <td class="p-3">Rp${formatRupiah(item.total)}</td>
-            <td class="p-3">Rp${formatRupiah(item.cashout||0)}</td>
-            <td class="p-3">Rp${formatRupiah(item.sisa)}</td>
-            <td class="p-3">${isAdmin?`
-              <button onclick='cashoutGaji("${c.key}",${JSON.stringify(item)})' class="text-green-600">Cashout</button>
-              <button onclick='editGaji("${c.key}",${JSON.stringify(item)})' class="text-blue-600">Edit</button>
-              <button onclick='hapusGaji("${c.key}")' class="text-red-600">Hapus</button>
-            `:"-"}</td>`;
-          tbody.appendChild(tr);
-        });
-      });
-    }
+    // Edit cashout - set cashout value directly (uses prompt but separated from 'cashout' action)
+    function editGajiCashout(key){ db.ref('gaji/'+key).once('value').then(snap=>{ const d=snap.val(); const newCash=parseInt(prompt('Set Cashout (total):', d.cashout||0)); if(!isNaN(newCash) && newCash>=0){ db.ref('gaji/'+key).update({cashout:newCash}); } }); }
 
-    function exportGajiCSV(){
-      db.ref("gaji").once("value",snap=>{
-        let csv="Nama,Jumlah,Bayaran,Total,Cashout,Sisa\n";
-        snap.forEach(c=>{
-          const i=c.val();
-          csv+=`${i.nama},${i.jumlah},${i.bayaran},${i.total},${i.cashout},${i.sisa}\n`;
-        });
-        const blob=new Blob([csv],{type:"text/csv"});
-        const a=document.createElement("a");
-        a.href=URL.createObjectURL(blob);
-        a.download="gaji.csv"; a.click();
-      });
-    }
+    function hapusGaji(key){ if(confirm('Hapus gaji?')) db.ref('gaji/'+key).remove(); }
 
-    // === Keuangan ===
-    function tambahKeuangan(){
-      const jenis=document.getElementById("jenis").value;
-      const nominal=parseInt(document.getElementById("nominal").value);
-      const keterangan=document.getElementById("keterangan").value;
-      const tanggal=new Date().toLocaleString();
-      db.ref("keuangan").push({jenis,nominal,keterangan,tanggal});
-    }
+    // === Project ===
+    function tambahProject(){ const nama=document.getElementById('projectNama').value; const jumlah=parseInt(document.getElementById('projectJumlah').value); const proses=document.getElementById('projectStatusProses').value; const bayar=document.getElementById('projectPembayaran').value; const deadline=document.getElementById('projectDeadline').value; const telp=document.getElementById('projectTelp').value; if(!nama||!jumlah||!deadline) return alert('Lengkapi form project'); db.ref('project').push({nama,jumlah,proses,pembayaran:bayar,deadline,telp}).then(()=>{ document.getElementById('projectNama').value=''; document.getElementById('projectJumlah').value=''; }); }
 
-    function hapusKeuangan(id){ db.ref("keuangan/"+id).remove(); }
+    function loadProject(isAdmin){ const tbody=document.getElementById('projectTable'); tbody.innerHTML=''; db.ref('project').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML = `
+          <td class="p-3">${data.nama}</td>
+          <td class="p-3">${data.jumlah}</td>
+          <td class="p-3">${data.proses}</td>
+          <td class="p-3">${data.pembayaran}</td>
+          <td class="p-3">${data.deadline}</td>
+          <td class="p-3">${data.telp || '-'} </td>
+          <td class="p-3">${isAdmin?`<div class='flex gap-2'><button onclick="editProject('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button><button onclick="hapusProject('${key}')" class='tiny bg-red-500 text-white rounded'>Hapus</button></div>`:'-'}</td>
+        `; tbody.appendChild(tr); }); }); }
 
-    function loadKeuangan(){
-      db.ref("keuangan").on("value",snap=>{
-        const tbody=document.getElementById("keuanganTable");
-        tbody.innerHTML="";
-        let totalP=0,totalK=0;
-        snap.forEach(c=>{
-          const i=c.val();
-          if(i.jenis==="pemasukan") totalP+=i.nominal; else totalK+=i.nominal;
-          const tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td class="p-3">${i.jenis}</td>
-            <td class="p-3">Rp${formatRupiah(i.nominal)}</td>
-            <td class="p-3">${i.keterangan}</td>
-            <td class="p-3">${i.tanggal}</td>
-            <td class="p-3"><button onclick='hapusKeuangan("${c.key}")' class="text-red-600">Hapus</button></td>`;
-          tbody.appendChild(tr);
-        });
-        updateGrafik(totalP,totalK);
-      });
-    }
+    // Edit project - allows editing only proses and pembayaran (and other fields optionally)
+    function editProject(key){ db.ref('project/'+key).once('value').then(snap=>{ const d=snap.val(); const newProses=prompt('Status Proses (Desain/Done):', d.proses||'Desain'); const newBayar=prompt('Status Pembayaran (DP/Lunas):', d.pembayaran||'DP'); if(newProses && newBayar){ db.ref('project/'+key).update({proses:newProses,pembayaran:newBayar}); } }); }
+    function hapusProject(key){ if(confirm('Hapus project?')) db.ref('project/'+key).remove(); }
+
+    // === Keuangan (separate tables) ===
+    function tambahKeuangan(){ const jenis=document.getElementById('jenis').value; const nominal=parseInt(document.getElementById('nominal').value); const ket=document.getElementById('keterangan').value; if(!nominal||!ket) return alert('Lengkapi form keuangan'); db.ref('keuangan').push({jenis,nominal,keterangan:ket,tanggal:Date.now()}).then(()=>{ document.getElementById('nominal').value=''; document.getElementById('keterangan').value=''; }); }
+
+    function loadKeuangan(isAdmin){ const pm=document.getElementById('pemasukanTable'); const pg=document.getElementById('pengeluaranTable'); pm.innerHTML=''; pg.innerHTML=''; db.ref('keuangan').on('value',snap=>{ pm.innerHTML=''; pg.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const row=`<tr data-key='${key}'><td class='p-3'>${data.jenis}</td><td class='p-3'>${formatRupiah(data.nominal)}</td><td class='p-3'>${data.keterangan}</td><td class='p-3'>${new Date(data.tanggal).toLocaleDateString()}</td><td class='p-3'>${isAdmin?`<button onclick="editKeuangan('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button> <button onclick="hapusKeuangan('${key}')" class='tiny bg-red-500 rounded text-white'>Hapus</button>`:'-'}</td></tr>`; if(data.jenis==='pemasukan') pm.innerHTML+=row; else pg.innerHTML+=row; }); updateGrafikTotals(); }); }
+
+    function editKeuangan(key){ db.ref('keuangan/'+key).once('value').then(snap=>{ const d=snap.val(); const jenis=prompt('Jenis (pemasukan/pengeluaran):', d.jenis); const nominal=parseInt(prompt('Nominal:', d.nominal)); const ket=prompt('Keterangan:', d.keterangan); if(jenis && !isNaN(nominal) && ket){ db.ref('keuangan/'+key).update({jenis,nominal,keterangan:ket}); } }); }
+    function hapusKeuangan(key){ if(confirm('Hapus keuangan?')) db.ref('keuangan/'+key).remove(); }
 
     // === RAB ===
-    function tambahRAB(){
-      const rencana=document.getElementById("rencana").value;
-      const anggaran=parseInt(document.getElementById("anggaran").value);
-      const tanggal=new Date().toLocaleString();
-      db.ref("rab").push({rencana,anggaran,tanggal});
-    }
-    function hapusRAB(id){ db.ref("rab/"+id).remove(); }
-    function loadRAB(){
-      db.ref("rab").on("value",snap=>{
-        const tbody=document.getElementById("rabTable");
-        tbody.innerHTML="";
-        snap.forEach(c=>{
-          const i=c.val();
-          const tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td class="p-3">${i.rencana}</td>
-            <td class="p-3">Rp${formatRupiah(i.anggaran)}</td>
-            <td class="p-3">${i.tanggal}</td>
-            <td class="p-3"><button onclick='hapusRAB("${c.key}")' class="text-red-600">Hapus</button></td>`;
-          tbody.appendChild(tr);
-        });
-      });
-    }
+    function tambahRAB(){ const rencana=document.getElementById('rencana').value; const anggaran=parseInt(document.getElementById('anggaran').value); if(!rencana||!anggaran) return alert('Lengkapi form RAB'); db.ref('rab').push({rencana,anggaran,tanggal:Date.now()}).then(()=>{ document.getElementById('rencana').value=''; document.getElementById('anggaran').value=''; }); }
+
+    function loadRAB(isAdmin){ const tbody=document.getElementById('rabTable'); tbody.innerHTML=''; db.ref('rab').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const d=child.val(); const key=child.key; const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML=`<td class='p-3'>${d.rencana}</td><td class='p-3'>${formatRupiah(d.anggaran)}</td><td class='p-3'>${new Date(d.tanggal).toLocaleDateString()}</td><td class='p-3'>${isAdmin?`<button onclick="editRAB('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button> <button onclick="hapusRAB('${key}')" class='tiny bg-red-500 rounded text-white'>Hapus</button>`:'-'}</td>`; tbody.appendChild(tr); }); }); }
+
+    function editRAB(key){ db.ref('rab/'+key).once('value').then(snap=>{ const d=snap.val(); const rencana=prompt('Rencana:', d.rencana); const anggaran=parseInt(prompt('Anggaran:', d.anggaran)); if(rencana && !isNaN(anggaran)){ db.ref('rab/'+key).update({rencana,anggaran}); } }); }
+    function hapusRAB(key){ if(confirm('Hapus RAB?')) db.ref('rab/'+key).remove(); }
 
     // === Grafik ===
-    function updateGrafik(totalP,totalK){
-      document.getElementById("totalPemasukan").innerText="Rp"+formatRupiah(totalP);
-      document.getElementById("totalPengeluaran").innerText="Rp"+formatRupiah(totalK);
-      document.getElementById("saldo").innerText="Rp"+formatRupiah(totalP-totalK);
+    function updateGrafikTotals(){ let totalPemasukan=0, totalPengeluaran=0; db.ref('keuangan').once('value').then(snap=>{ snap.forEach(child=>{ const d=child.val(); if(d.jenis==='pemasukan') totalPemasukan+=d.nominal; else totalPengeluaran+=d.nominal; }); document.getElementById('totalPemasukan').innerText=formatRupiah(totalPemasukan); document.getElementById('totalPengeluaran').innerText=formatRupiah(totalPengeluaran); document.getElementById('saldo').innerText=formatRupiah(totalPemasukan-totalPengeluaran); drawChart(totalPemasukan,totalPengeluaran); }); }
 
-      const ctx=document.getElementById("grafikCanvas").getContext("2d");
-      if(chart) chart.destroy();
-      chart=new Chart(ctx,{
-        type:"bar",
-        data:{
-          labels:["Pemasukan","Pengeluaran"],
-          datasets:[{
-            label:"Keuangan",
-            data:[totalP,totalK],
-            backgroundColor:["#22c55e","#ef4444"]
-          }]
-        },
-        options:{responsive:true,maintainAspectRatio:false}
-      });
-    }
+    function drawChart(pemasukan,pengeluaran){ const ctx=document.getElementById('grafikCanvas').getContext('2d'); if(chart) chart.destroy(); chart=new Chart(ctx,{ type:'bar', data:{ labels:['Pemasukan','Pengeluaran','Saldo'], datasets:[{ label:'Jumlah (Rp)', data:[pemasukan,pengeluaran,pemasukan-pengeluaran], backgroundColor:['#22c55e','#ef4444','#3b82f6'] }] }, options:{ responsive:true, plugins:{ legend:{ display:false } }, animation:{ duration:600 } } }); }
+
+    // === Exports ===
+    function exportGajiCSV(){ db.ref('gaji').once('value').then(snap=>{ let csv='Nama,Jumlah,Bayaran,Total,Cashout,Sisa\n'; snap.forEach(child=>{ const d=child.val(); const total=d.jumlah*d.bayaran; const sisa=total-(d.cashout||0); csv+=`${d.nama},${d.jumlah},${d.bayaran},${total},${d.cashout||0},${sisa}\n`; }); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gaji.csv'; a.click(); URL.revokeObjectURL(url); }); }
+
+    // === Utility: central load function for admin/user ===
+    function loadAllRealtimeWhenAdmin(){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); }
+    function loadAllRealtime(){ if(role==='admin') loadAllRealtimeWhenAdmin(); }
+
+    // === Simple generic table filter for all columns (realtime) ===
+    function filterTable(tableId, query){ const q=(query||'').toLowerCase(); const table=document.getElementById(tableId); if(!table) return; const rows = table.querySelectorAll('tr'); rows.forEach((r,i)=>{ if(i===0) return; const text = r.innerText.toLowerCase(); r.style.display = text.includes(q) ? '' : 'none'; }); }
+
+    // === Modal helpers (not used heavily - kept for future) ===
+    function openModal(title, bodyHtml, saveCallback){ modalContext = saveCallback; document.getElementById('modalTitle').innerText = title; document.getElementById('modalBody').innerHTML = bodyHtml; document.getElementById('modal').style.display = 'block'; document.getElementById('modalContainer').classList.add('active'); }
+    function closeModal(){ modalContext = null; document.getElementById('modal').style.display = 'none'; document.getElementById('modalContainer').classList.remove('active'); }
+    function modalSave(){ if(typeof modalContext === 'function') modalContext(); closeModal(); }
+
+    // === Initial real-time attach when admin logs in or user loads allowed pages ===
+    function loadAllRealtime(){ if(role==='admin'){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); } else { loadGaji(false); loadProject(false); } }
+
   </script>
 </body>
 </html>
