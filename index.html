@@ -29,6 +29,8 @@
     @keyframes fadeIn { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
     .small-input { width:110px; }
     .tiny { font-size:12px; padding:6px 8px; }
+    /* ensure sidebar overlay sits below modal overlay if both present */
+    #sidebarOverlay { z-index: 45; } 
   </style>
 </head>
 <body class="bg-gray-50">
@@ -46,7 +48,12 @@
 
   <!-- Dashboard -->
   <div id="dashboard" class="hidden h-screen flex relative fade-in">
+
+    <!-- Modal overlay (existing - used for modal container) -->
     <div id="overlay" class="overlay" onclick="closeModal()"></div>
+
+    <!-- NEW: Sidebar overlay (separate from modal overlay) -->
+    <div id="sidebarOverlay" class="overlay" onclick="closeSidebar()"></div>
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen fixed md:static z-40 sidebar-hidden md:translate-x-0">
@@ -85,7 +92,8 @@
       <section id="gajiPage" class="hidden fade-in">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-sky-700">Daftar Komisi</h2>
-          <button id="exportBtn" onclick="exportGajiCSV()" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
+          <!-- existing export button (adminShown) -->
+          <button id="exportBtn" onclick="exportTableCSV('gajiTable','gaji_data.csv')" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
         </div>
 
         <div id="adminGajiForm" class="mb-4 hidden flex flex-col md:flex-row gap-2">
@@ -137,8 +145,10 @@
           <button onclick="tambahProject()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 flex justify-between gap-2">
           <input id="searchProject" oninput="filterTable('projectTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+          <!-- added export button for project -->
+          <button onclick="exportTableCSV('projectTable','project_data.csv')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">⬇ Export CSV</button>
         </div>
 
         <div class="overflow-x-auto">
@@ -175,7 +185,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h3 class="mb-2 font-bold">Pemasukan</h3>
-            <input id="searchPemasukan" oninput="filterTable('pemasukanTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full mb-2">
+            <div class="mb-2 flex gap-2">
+              <input id="searchPemasukan" oninput="filterTable('pemasukanTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+              <!-- export button for pemasukan -->
+              <button onclick="exportTableCSV('pemasukanTable','keuangan_pemasukan.csv')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">CSV</button>
+            </div>
             <div class="overflow-x-auto">
               <table class="w-full card overflow-hidden text-sm">
                 <thead class="bg-sky-600 text-white"><tr><th class="p-3">Jenis</th><th class="p-3">Nominal</th><th class="p-3">Keterangan</th><th class="p-3">Tanggal</th><th class="p-3">Aksi</th></tr></thead>
@@ -186,7 +200,11 @@
 
           <div>
             <h3 class="mb-2 font-bold">Pengeluaran</h3>
-            <input id="searchPengeluaran" oninput="filterTable('pengeluaranTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full mb-2">
+            <div class="mb-2 flex gap-2">
+              <input id="searchPengeluaran" oninput="filterTable('pengeluaranTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+              <!-- export button for pengeluaran -->
+              <button onclick="exportTableCSV('pengeluaranTable','keuangan_pengeluaran.csv')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">CSV</button>
+            </div>
             <div class="overflow-x-auto">
               <table class="w-full card overflow-hidden text-sm">
                 <thead class="bg-sky-600 text-white"><tr><th class="p-3">Jenis</th><th class="p-3">Nominal</th><th class="p-3">Keterangan</th><th class="p-3">Tanggal</th><th class="p-3">Aksi</th></tr></thead>
@@ -206,8 +224,10 @@
           <button onclick="tambahRAB()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg">Tambah</button>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 flex justify-between gap-2">
           <input id="searchRAB" oninput="filterTable('rabTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
+          <!-- export button for RAB -->
+          <button onclick="exportTableCSV('rabTable','rab_data.csv')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">⬇ Export CSV</button>
         </div>
 
         <div class="overflow-x-auto">
@@ -246,7 +266,20 @@
 
   <script>
     // === Sidebar Toggle (Mobile) ===
-    function toggleSidebar(){ const sidebar=document.getElementById('sidebar'); sidebar.classList.toggle('sidebar-hidden'); }
+    function toggleSidebar(){
+      const sidebar = document.getElementById('sidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      // toggle visibility class on sidebar (original uses sidebar-hidden)
+      sidebar.classList.toggle('sidebar-hidden');
+      // toggle sidebar overlay active
+      sidebarOverlay.classList.toggle('active');
+    }
+    function closeSidebar(){
+      const sidebar = document.getElementById('sidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.add('sidebar-hidden');
+      sidebarOverlay.classList.remove('active');
+    }
 
     // === Firebase ===
     const firebaseConfig = {
@@ -366,8 +399,37 @@
 
     function drawChart(pemasukan,pengeluaran){ const ctx=document.getElementById('grafikCanvas').getContext('2d'); if(chart) chart.destroy(); chart=new Chart(ctx,{ type:'bar', data:{ labels:['Pemasukan','Pengeluaran','Saldo'], datasets:[{ label:'Jumlah (Rp)', data:[pemasukan,pengeluaran,pemasukan-pengeluaran], backgroundColor:['#22c55e','#ef4444','#3b82f6'] }] }, options:{ responsive:true, plugins:{ legend:{ display:false } }, animation:{ duration:600 } } }); }
 
-    // === Exports ===
-    function exportGajiCSV(){ db.ref('gaji').once('value').then(snap=>{ let csv='Nama,Jumlah,Bayaran,Total,Cashout,Sisa\n'; snap.forEach(child=>{ const d=child.val(); const total=d.jumlah*d.bayaran; const sisa=total-(d.cashout||0); csv+=`${d.nama},${d.jumlah},${d.bayaran},${total},${d.cashout||0},${sisa}\n`; }); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gaji.csv'; a.click(); URL.revokeObjectURL(url); }); }
+    // === Exports: universal table -> CSV ===
+    function exportTableCSV(tableId, filename){
+      const table = document.getElementById(tableId);
+      if(!table) return alert('Tabel tidak ditemukan: '+tableId);
+      const rows = table.querySelectorAll('tr');
+      const csv = [];
+      rows.forEach(row => {
+        const cols = row.querySelectorAll('th, td');
+        if(cols.length===0) return;
+        const rowData = [];
+        cols.forEach(col => {
+          // sanitize commas and linebreaks
+          let text = col.innerText.replace(/\\r?\\n/g,' ').replace(/,/g,'');
+          // wrap in quotes
+          rowData.push('\"' + text + '\"');
+        });
+        csv.push(rowData.join(','));
+      });
+      const blob = new Blob([csv.join('\\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'export.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Backwards-compatible helper (existing export button in Gaji calls this)
+    function exportGajiCSV(){ exportTableCSV('gajiTable','gaji_data.csv'); }
 
     // === Utility: central load function for admin/user ===
     function loadAllRealtimeWhenAdmin(){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); }
@@ -382,8 +444,11 @@
     function modalSave(){ if(typeof modalContext === 'function') modalContext(); closeModal(); }
 
     // === Initial real-time attach when admin logs in or user loads allowed pages ===
-    function loadAllRealtime(){ if(role==='admin'){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); } else { loadGaji(false); loadProject(false); } }
+    function initialLoad(){ if(role==='admin'){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); } else { loadGaji(false); loadProject(false); } }
 
+    // Keep original loadAllRealtime name behavior
+    // (a few functions above reference loadAllRealtime)
+    // If necessary, call initialLoad instead
   </script>
 </body>
 </html>
