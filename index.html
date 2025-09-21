@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TENX SISTEM - Dashboard (Final)</title>
 
@@ -15,9 +15,13 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+  <!-- jsPDF + AutoTable for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .sidebar { width: 240px; transition: transform 0.25s ease; }
+    .sidebar { width: 240px; transition: transform 0.22s ease; }
     .sidebar-hidden { transform: translateX(-100%); }
     .menu-item.active { background: rgba(255,255,255,0.08); border-radius: 8px; }
     table tbody tr:nth-child(even) { background-color: #f8fafc; }
@@ -29,8 +33,12 @@
     @keyframes fadeIn { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
     .small-input { width:110px; }
     .tiny { font-size:12px; padding:6px 8px; }
-    /* ensure sidebar overlay sits below modal overlay if both present */
-    #sidebarOverlay { z-index: 45; } 
+    #sidebarOverlay { z-index: 45; }
+    #sizeImagePreview { max-width: 210px; max-height: 160px; display:block; margin-top:0.5rem; border-radius:8px; object-fit:cover; }
+    .muted { color: #6b7280; font-size:13px; }
+    .btn-small { padding:6px 8px; font-size:12px; border-radius:6px; }
+    .input-inline { padding:6px; border:1px solid #e5e7eb; border-radius:6px; font-size:13px; }
+    .table-actions button { margin-right:6px; }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -48,18 +56,13 @@
 
   <!-- Dashboard -->
   <div id="dashboard" class="hidden h-screen flex relative fade-in">
-
-    <!-- Modal overlay (existing - used for modal container) -->
     <div id="overlay" class="overlay" onclick="closeModal()"></div>
-
-    <!-- NEW: Sidebar overlay (separate from modal overlay) -->
     <div id="sidebarOverlay" class="overlay" onclick="closeSidebar()"></div>
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar bg-gradient-to-b from-sky-700 to-sky-500 text-white p-6 flex flex-col min-h-screen fixed md:static z-40 sidebar-hidden md:translate-x-0">
       <h2 class="text-2xl font-bold mb-8">TENX APPAREL</h2>
 
-      <!-- Admin Menu -->
       <nav id="adminMenu" class="space-y-2 hidden">
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')">Gaji</div>
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('keuanganPage')">Keuangan</div>
@@ -68,7 +71,6 @@
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('projectPage')">Project Kaos Kelas</div>
       </nav>
 
-      <!-- User Menu -->
       <nav id="userMenu" class="space-y-2 hidden">
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('gajiPage')">Gaji</div>
         <div class="menu-item p-2 cursor-pointer hover:bg-white/10 rounded" onclick="showPage('projectPage')">Project Kaos Kelas</div>
@@ -79,10 +81,9 @@
       </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto w-full md:ml-0 ml-0">
 
-      <!-- Header hamburger -->
       <div class="flex items-center justify-between mb-6 md:hidden">
         <button onclick="toggleSidebar()" class="text-sky-700 text-2xl">☰</button>
         <h1 class="text-xl font-bold text-sky-700">Dashboard</h1>
@@ -92,7 +93,6 @@
       <section id="gajiPage" class="hidden fade-in">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-sky-700">Daftar Komisi</h2>
-          <!-- existing export button (adminShown) -->
           <button id="exportBtn" onclick="exportTableCSV('gajiTable','gaji_data.csv')" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">⬇ Export CSV</button>
         </div>
 
@@ -147,7 +147,6 @@
 
         <div class="mb-3 flex justify-between gap-2">
           <input id="searchProject" oninput="filterTable('projectTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
-          <!-- added export button for project -->
           <button onclick="exportTableCSV('projectTable','project_data.csv')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">⬇ Export CSV</button>
         </div>
 
@@ -167,6 +166,55 @@
             <tbody id="projectTable"></tbody>
           </table>
         </div>
+
+        <!-- Subsection: List Ukuran & Nama -->
+        <div class="card p-4 mt-6">
+          <h3 class="text-xl font-bold text-sky-700 mb-1">List Ukuran & Nama</h3>
+          <p class="muted mb-3">Paste mentah dari customer — parser otomatis akan bersihin & klasifikasi. Setelah sortir, Anda bisa <strong>Edit</strong> / <strong>Hapus</strong> baris lalu export PDF (landscape, 1 page).</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <textarea id="sizeInput" rows="8" placeholder="Paste list di sini. Contoh (boleh berantakan):&#10;LIST KAOS F3 SMANSAMAJ&#10;1. abd xl pendek&#10;2. emry s panjang&#10;walikelas: malika xl (60 79) panjang" class="w-full p-2 border rounded-lg md:col-span-2"></textarea>
+
+            <div>
+              <label class="text-sm block mb-1">Nama Kaos Kelas (opsional)</label>
+              <input id="exportProjectName" placeholder="(opsional jika 'Nama Kaos Kelas' sudah diisi)" class="p-2 border rounded-lg w-full mb-2">
+              <label class="text-sm block mb-1">Upload logo/gambar (opsional)</label>
+              <input id="sizeImage" type="file" accept="image/*" class="mb-2 w-full">
+              <img id="sizeImagePreview" src="" alt="Preview gambar" style="display:none;">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 mb-4">
+            <select id="sortBy" class="p-2 border rounded">
+              <option value="ukuran_ket">Urut: Ukuran → Keterangan</option>
+              <option value="ket_ukuran">Urut: Keterangan → Ukuran</option>
+              <option value="nama">Urut: Nama (A-Z)</option>
+            </select>
+
+            <button onclick="processSizeList()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg">Sortir</button>
+            <button onclick="exportSizePDF()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">Export PDF (Pedoman)</button>
+            <button onclick="exportSizeCSV()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Export CSV</button>
+            <button onclick="clearSizeList()" class="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-lg">Clear</button>
+
+            <div class="ml-auto flex gap-2">
+              <input id="manualNama" placeholder="Nama baru" class="input-inline" />
+              <input id="manualUkuran" placeholder="Ukuran" class="input-inline" />
+              <input id="manualKet" placeholder="Keterangan" class="input-inline" />
+              <button onclick="addManualRow()" class="bg-indigo-600 text-white btn-small rounded">Tambah</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full card overflow-hidden text-sm">
+              <thead class="bg-sky-600 text-white">
+                <tr><th class="p-3">No</th><th class="p-3">Nama</th><th class="p-3">Ukuran</th><th class="p-3">Keterangan</th><th class="p-3">Aksi</th></tr>
+              </thead>
+              <tbody id="sizeTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- end subsection -->
+
       </section>
 
       <!-- Keuangan Page -->
@@ -187,7 +235,6 @@
             <h3 class="mb-2 font-bold">Pemasukan</h3>
             <div class="mb-2 flex gap-2">
               <input id="searchPemasukan" oninput="filterTable('pemasukanTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
-              <!-- export button for pemasukan -->
               <button onclick="exportTableCSV('pemasukanTable','keuangan_pemasukan.csv')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">CSV</button>
             </div>
             <div class="overflow-x-auto">
@@ -202,7 +249,6 @@
             <h3 class="mb-2 font-bold">Pengeluaran</h3>
             <div class="mb-2 flex gap-2">
               <input id="searchPengeluaran" oninput="filterTable('pengeluaranTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
-              <!-- export button for pengeluaran -->
               <button onclick="exportTableCSV('pengeluaranTable','keuangan_pengeluaran.csv')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">CSV</button>
             </div>
             <div class="overflow-x-auto">
@@ -226,7 +272,6 @@
 
         <div class="mb-3 flex justify-between gap-2">
           <input id="searchRAB" oninput="filterTable('rabTable', this.value)" placeholder="Cari semua kolom..." class="p-2 border rounded-lg w-full">
-          <!-- export button for RAB -->
           <button onclick="exportTableCSV('rabTable','rab_data.csv')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">⬇ Export CSV</button>
         </div>
 
@@ -252,7 +297,7 @@
     </main>
   </div>
 
-  <!-- Modal Container (used for edit forms if needed) -->
+  <!-- Modal Container -->
   <div id="modalContainer" class="overlay" onclick="closeModal()">
     <div id="modal" class="max-w-lg mx-auto mt-24 bg-white rounded-lg p-6 shadow-lg" onclick="event.stopPropagation()" style="display:none;">
       <h3 id="modalTitle" class="text-lg font-bold mb-3"></h3>
@@ -265,23 +310,23 @@
   </div>
 
   <script>
-    // === Sidebar Toggle (Mobile) ===
+    // -----------------------
+    // Sidebar toggles
+    // -----------------------
     function toggleSidebar(){
       const sidebar = document.getElementById('sidebar');
       const sidebarOverlay = document.getElementById('sidebarOverlay');
-      // toggle visibility class on sidebar (original uses sidebar-hidden)
       sidebar.classList.toggle('sidebar-hidden');
-      // toggle sidebar overlay active
       sidebarOverlay.classList.toggle('active');
     }
     function closeSidebar(){
-      const sidebar = document.getElementById('sidebar');
-      const sidebarOverlay = document.getElementById('sidebarOverlay');
-      sidebar.classList.add('sidebar-hidden');
-      sidebarOverlay.classList.remove('active');
+      document.getElementById('sidebar').classList.add('sidebar-hidden');
+      document.getElementById('sidebarOverlay').classList.remove('active');
     }
 
-    // === Firebase ===
+    // -----------------------
+    // Firebase init
+    // -----------------------
     const firebaseConfig = {
       apiKey: "AIzaSyA2jBUihCiLq6FBWKuJKrpXZcUAAFm12b0",
       authDomain: "komisi-team-tenx.firebaseapp.com",
@@ -295,13 +340,15 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    let role = null; // 'admin' or 'user'
+    let role = null;
     let chart = null;
     let modalContext = null;
 
     function formatRupiah(angka){ const n = Number(angka ?? 0); if (isNaN(n)) return "0"; return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
-    // === Auth ===
+    // -----------------------
+    // Auth
+    // -----------------------
     function login(){
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
@@ -312,7 +359,7 @@
 
     auth.onAuthStateChanged(user=>{
       if(user){
-        if(user.email === 'admin@gmail.com'){ role='admin'; showAdminMenu(); loadAllRealtime(); }
+        if(user.email === 'admin@gmail.com'){ role='admin'; showAdminMenu(); initialLoad(); }
         else { role='user'; showUserMenu(); loadGaji(false); loadProject(false); }
         showPage('gajiPage');
       } else { document.getElementById('loginPage').classList.remove('hidden'); document.getElementById('dashboard').classList.add('hidden'); }
@@ -320,86 +367,147 @@
 
     function logout(){ auth.signOut(); location.reload(); }
 
-    function showAdminMenu(){ document.getElementById('adminMenu').classList.remove('hidden'); document.getElementById('adminGajiForm').classList.remove('hidden'); document.getElementById('exportBtn').classList.remove('hidden'); document.getElementById('adminProjectForm').classList.remove('hidden'); }
+    function showAdminMenu(){
+      document.getElementById('adminMenu').classList.remove('hidden');
+      document.getElementById('adminGajiForm').classList.remove('hidden');
+      document.getElementById('exportBtn').classList.remove('hidden');
+      document.getElementById('adminProjectForm').classList.remove('hidden');
+    }
     function showUserMenu(){ document.getElementById('userMenu').classList.remove('hidden'); }
 
-    function showPage(id){ ['gajiPage','keuanganPage','rabPage','grafikPage','projectPage'].forEach(p=>{document.getElementById(p).classList.add('hidden');}); document.getElementById(id).classList.remove('hidden'); }
+    function showPage(id){
+      ['gajiPage','keuanganPage','rabPage','grafikPage','projectPage'].forEach(p=>{document.getElementById(p).classList.add('hidden');});
+      document.getElementById(id).classList.remove('hidden');
+    }
 
-    // === Realtime loaders ===
-    function loadAllRealtime(){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); }
+    // -----------------------
+    // Gaji
+    // -----------------------
+    function tambahGaji(){
+      const nama=document.getElementById('nama').value;
+      const jumlah=parseInt(document.getElementById('jumlah').value);
+      const bayaran=parseInt(document.getElementById('bayaran').value);
+      if(!nama||!jumlah||!bayaran) return alert('Lengkapi form');
+      db.ref('gaji').push({nama,jumlah,bayaran,cashout:0}).then(()=>{
+        document.getElementById('nama').value=''; document.getElementById('jumlah').value=''; document.getElementById('bayaran').value='';
+      });
+    }
 
-    // === Gaji ===
-    function tambahGaji(){ const nama=document.getElementById('nama').value; const jumlah=parseInt(document.getElementById('jumlah').value); const bayaran=parseInt(document.getElementById('bayaran').value); if(!nama||!jumlah||!bayaran) return alert('Lengkapi form'); db.ref('gaji').push({nama,jumlah,bayaran,cashout:0}).then(()=>{ document.getElementById('nama').value=''; document.getElementById('jumlah').value=''; document.getElementById('bayaran').value=''; }); }
+    function loadGaji(isAdmin){
+      const tbody=document.getElementById('gajiTable'); tbody.innerHTML='';
+      db.ref('gaji').on('value',snap=>{
+        tbody.innerHTML='';
+        snap.forEach(child=>{
+          const data=child.val(); const key=child.key;
+          const total=(data.jumlah*data.bayaran);
+          const sisa=(total - (data.cashout||0));
+          const tr=document.createElement('tr');
+          tr.dataset.key=key;
+          tr.innerHTML = `
+            <td class="p-3">${data.nama}</td>
+            <td class="p-3">${data.jumlah}</td>
+            <td class="p-3">${formatRupiah(data.bayaran)}</td>
+            <td class="p-3">${formatRupiah(total)}</td>
+            <td class="p-3">${formatRupiah(data.cashout||0)}</td>
+            <td class="p-3">${formatRupiah(sisa)}</td>
+            <td class="p-3">
+              ${isAdmin?`<div class="flex items-center gap-2">
+                <input id="cashoutInput-${key}" type="number" min=0 placeholder="0" class="p-1 border rounded small-input">
+                <button onclick="cashoutGaji('${key}')" class="tiny bg-blue-500 text-white rounded">Cashout</button>
+                <button onclick="editGajiNominal('${key}')" class="tiny bg-yellow-400 rounded">Edit Nominal</button>
+                <button onclick="editGajiCashout('${key}')" class="tiny bg-amber-500 rounded">Edit Cashout</button>
+                <button onclick="hapusGaji('${key}')" class="tiny bg-red-500 text-white rounded">Hapus</button>
+              </div>`:'-'}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
 
-    function loadGaji(isAdmin){ const tbody=document.getElementById('gajiTable'); tbody.innerHTML=''; db.ref('gaji').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const total=(data.jumlah*data.bayaran); const sisa=(total - (data.cashout||0)); const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML = `
-        <td class="p-3">${data.nama}</td>
-        <td class="p-3">${data.jumlah}</td>
-        <td class="p-3">${formatRupiah(data.bayaran)}</td>
-        <td class="p-3">${formatRupiah(total)}</td>
-        <td class="p-3">${formatRupiah(data.cashout||0)}</td>
-        <td class="p-3">${formatRupiah(sisa)}</td>
-        <td class="p-3">
-          ${isAdmin?`
-            <div class=\"flex items-center gap-2\"> 
-              <input id=\"cashoutInput-${key}\" type=\"number\" min=0 placeholder=\"0\" class=\"p-1 border rounded small-input\"> 
-              <button onclick=\"cashoutGaji('${key}')\" class=\"tiny bg-blue-500 text-white rounded\">Cashout</button>
-              <button onclick=\"editGajiNominal('${key}')\" class=\"tiny bg-yellow-400 rounded\">Edit Nominal</button>
-              <button onclick=\"editGajiCashout('${key}')\" class=\"tiny bg-amber-500 rounded\">Edit Cashout</button>
-              <button onclick=\"hapusGaji('${key}')\" class=\"tiny bg-red-500 text-white rounded\">Hapus</button>
-            </div>` : `-`}
-        </td>
-      `; tbody.appendChild(tr); }); }); }
-
-    // Cashout without prompt - uses transaction to add cashout amount
     function cashoutGaji(key){ const input=document.getElementById('cashoutInput-'+key); const val=parseInt(input?.value || 0); if(!val || val<=0) return alert('Masukkan nominal cashout > 0'); const cashoutRef=db.ref('gaji/'+key+'/cashout'); cashoutRef.transaction(current=>{ return (current||0) + val; }, ()=>{ input.value=''; }); }
-
-    // Edit nominal (jumlah & bayaran) - opens prompt (nominal prompt allowed by spec)
     function editGajiNominal(key){ db.ref('gaji/'+key).once('value').then(snap=>{ const d=snap.val(); const newNama=prompt('Nama:', d.nama); const newJumlah=parseInt(prompt('Jumlah:', d.jumlah)); const newBayaran=parseInt(prompt('Bayaran:', d.bayaran)); if(newNama && !isNaN(newJumlah) && !isNaN(newBayaran)){ db.ref('gaji/'+key).update({nama:newNama,jumlah:newJumlah,bayaran:newBayaran}); } }); }
-
-    // Edit cashout - set cashout value directly (uses prompt but separated from 'cashout' action)
     function editGajiCashout(key){ db.ref('gaji/'+key).once('value').then(snap=>{ const d=snap.val(); const newCash=parseInt(prompt('Set Cashout (total):', d.cashout||0)); if(!isNaN(newCash) && newCash>=0){ db.ref('gaji/'+key).update({cashout:newCash}); } }); }
-
     function hapusGaji(key){ if(confirm('Hapus gaji?')) db.ref('gaji/'+key).remove(); }
 
-    // === Project ===
-    function tambahProject(){ const nama=document.getElementById('projectNama').value; const jumlah=parseInt(document.getElementById('projectJumlah').value); const proses=document.getElementById('projectStatusProses').value; const bayar=document.getElementById('projectPembayaran').value; const deadline=document.getElementById('projectDeadline').value; const telp=document.getElementById('projectTelp').value; if(!nama||!jumlah||!deadline) return alert('Lengkapi form project'); db.ref('project').push({nama,jumlah,proses,pembayaran:bayar,deadline,telp}).then(()=>{ document.getElementById('projectNama').value=''; document.getElementById('projectJumlah').value=''; }); }
+    // -----------------------
+    // Project
+    // -----------------------
+    function tambahProject(){
+      const nama=document.getElementById('projectNama').value;
+      const jumlah=parseInt(document.getElementById('projectJumlah').value);
+      const proses=document.getElementById('projectStatusProses').value;
+      const bayar=document.getElementById('projectPembayaran').value;
+      const deadline=document.getElementById('projectDeadline').value;
+      const telp=document.getElementById('projectTelp').value;
+      if(!nama||!jumlah||!deadline) return alert('Lengkapi form project');
+      db.ref('project').push({nama,jumlah,proses,pembayaran:bayar,deadline,telp}).then(()=>{ document.getElementById('projectNama').value=''; document.getElementById('projectJumlah').value=''; });
+    }
 
-    function loadProject(isAdmin){ const tbody=document.getElementById('projectTable'); tbody.innerHTML=''; db.ref('project').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML = `
-          <td class="p-3">${data.nama}</td>
-          <td class="p-3">${data.jumlah}</td>
-          <td class="p-3">${data.proses}</td>
-          <td class="p-3">${data.pembayaran}</td>
-          <td class="p-3">${data.deadline}</td>
-          <td class="p-3">${data.telp || '-'} </td>
-          <td class="p-3">${isAdmin?`<div class='flex gap-2'><button onclick="editProject('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button><button onclick="hapusProject('${key}')" class='tiny bg-red-500 text-white rounded'>Hapus</button></div>`:'-'}</td>
-        `; tbody.appendChild(tr); }); }); }
+    function loadProject(isAdmin){
+      const tbody=document.getElementById('projectTable'); tbody.innerHTML='';
+      db.ref('project').on('value',snap=>{
+        tbody.innerHTML='';
+        snap.forEach(child=>{
+          const data=child.val(); const key=child.key;
+          const tr=document.createElement('tr'); tr.dataset.key=key;
+          tr.innerHTML = `
+            <td class="p-3">${data.nama}</td>
+            <td class="p-3">${data.jumlah}</td>
+            <td class="p-3">${data.proses}</td>
+            <td class="p-3">${data.pembayaran}</td>
+            <td class="p-3">${data.deadline}</td>
+            <td class="p-3">${data.telp || '-'}</td>
+            <td class="p-3">${isAdmin?`<div class='flex gap-2'><button onclick="editProject('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button><button onclick="hapusProject('${key}')" class='tiny bg-red-500 text-white rounded'>Hapus</button></div>`:'-'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
 
-    // Edit project - allows editing only proses and pembayaran (and other fields optionally)
     function editProject(key){ db.ref('project/'+key).once('value').then(snap=>{ const d=snap.val(); const newProses=prompt('Status Proses (Desain/Done):', d.proses||'Desain'); const newBayar=prompt('Status Pembayaran (DP/Lunas):', d.pembayaran||'DP'); if(newProses && newBayar){ db.ref('project/'+key).update({proses:newProses,pembayaran:newBayar}); } }); }
     function hapusProject(key){ if(confirm('Hapus project?')) db.ref('project/'+key).remove(); }
 
-    // === Keuangan (separate tables) ===
+    // -----------------------
+    // Keuangan
+    // -----------------------
     function tambahKeuangan(){ const jenis=document.getElementById('jenis').value; const nominal=parseInt(document.getElementById('nominal').value); const ket=document.getElementById('keterangan').value; if(!nominal||!ket) return alert('Lengkapi form keuangan'); db.ref('keuangan').push({jenis,nominal,keterangan:ket,tanggal:Date.now()}).then(()=>{ document.getElementById('nominal').value=''; document.getElementById('keterangan').value=''; }); }
 
-    function loadKeuangan(isAdmin){ const pm=document.getElementById('pemasukanTable'); const pg=document.getElementById('pengeluaranTable'); pm.innerHTML=''; pg.innerHTML=''; db.ref('keuangan').on('value',snap=>{ pm.innerHTML=''; pg.innerHTML=''; snap.forEach(child=>{ const data=child.val(); const key=child.key; const row=`<tr data-key='${key}'><td class='p-3'>${data.jenis}</td><td class='p-3'>${formatRupiah(data.nominal)}</td><td class='p-3'>${data.keterangan}</td><td class='p-3'>${new Date(data.tanggal).toLocaleDateString()}</td><td class='p-3'>${isAdmin?`<button onclick="editKeuangan('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button> <button onclick="hapusKeuangan('${key}')" class='tiny bg-red-500 rounded text-white'>Hapus</button>`:'-'}</td></tr>`; if(data.jenis==='pemasukan') pm.innerHTML+=row; else pg.innerHTML+=row; }); updateGrafikTotals(); }); }
-
+    function loadKeuangan(isAdmin){
+      const pm=document.getElementById('pemasukanTable'); const pg=document.getElementById('pengeluaranTable');
+      pm.innerHTML=''; pg.innerHTML='';
+      db.ref('keuangan').on('value',snap=>{
+        pm.innerHTML=''; pg.innerHTML='';
+        snap.forEach(child=>{
+          const data=child.val(); const key=child.key;
+          const row=`<tr data-key='${key}'><td class='p-3'>${data.jenis}</td><td class='p-3'>${formatRupiah(data.nominal)}</td><td class='p-3'>${data.keterangan}</td><td class='p-3'>${new Date(data.tanggal).toLocaleDateString()}</td><td class='p-3'>${isAdmin?`<button onclick="editKeuangan('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button> <button onclick="hapusKeuangan('${key}')" class='tiny bg-red-500 rounded text-white'>Hapus</button>`:'-'}</td></tr>`;
+          if(data.jenis==='pemasukan') pm.innerHTML+=row; else pg.innerHTML+=row;
+        });
+        updateGrafikTotals();
+      });
+    }
     function editKeuangan(key){ db.ref('keuangan/'+key).once('value').then(snap=>{ const d=snap.val(); const jenis=prompt('Jenis (pemasukan/pengeluaran):', d.jenis); const nominal=parseInt(prompt('Nominal:', d.nominal)); const ket=prompt('Keterangan:', d.keterangan); if(jenis && !isNaN(nominal) && ket){ db.ref('keuangan/'+key).update({jenis,nominal,keterangan:ket}); } }); }
     function hapusKeuangan(key){ if(confirm('Hapus keuangan?')) db.ref('keuangan/'+key).remove(); }
 
-    // === RAB ===
+    // -----------------------
+    // RAB
+    // -----------------------
     function tambahRAB(){ const rencana=document.getElementById('rencana').value; const anggaran=parseInt(document.getElementById('anggaran').value); if(!rencana||!anggaran) return alert('Lengkapi form RAB'); db.ref('rab').push({rencana,anggaran,tanggal:Date.now()}).then(()=>{ document.getElementById('rencana').value=''; document.getElementById('anggaran').value=''; }); }
 
     function loadRAB(isAdmin){ const tbody=document.getElementById('rabTable'); tbody.innerHTML=''; db.ref('rab').on('value',snap=>{ tbody.innerHTML=''; snap.forEach(child=>{ const d=child.val(); const key=child.key; const tr=document.createElement('tr'); tr.dataset.key=key; tr.innerHTML=`<td class='p-3'>${d.rencana}</td><td class='p-3'>${formatRupiah(d.anggaran)}</td><td class='p-3'>${new Date(d.tanggal).toLocaleDateString()}</td><td class='p-3'>${isAdmin?`<button onclick="editRAB('${key}')" class='tiny bg-yellow-400 rounded'>Edit</button> <button onclick="hapusRAB('${key}')" class='tiny bg-red-500 rounded text-white'>Hapus</button>`:'-'}</td>`; tbody.appendChild(tr); }); }); }
-
     function editRAB(key){ db.ref('rab/'+key).once('value').then(snap=>{ const d=snap.val(); const rencana=prompt('Rencana:', d.rencana); const anggaran=parseInt(prompt('Anggaran:', d.anggaran)); if(rencana && !isNaN(anggaran)){ db.ref('rab/'+key).update({rencana,anggaran}); } }); }
     function hapusRAB(key){ if(confirm('Hapus RAB?')) db.ref('rab/'+key).remove(); }
 
-    // === Grafik ===
+    // -----------------------
+    // Grafik
+    // -----------------------
     function updateGrafikTotals(){ let totalPemasukan=0, totalPengeluaran=0; db.ref('keuangan').once('value').then(snap=>{ snap.forEach(child=>{ const d=child.val(); if(d.jenis==='pemasukan') totalPemasukan+=d.nominal; else totalPengeluaran+=d.nominal; }); document.getElementById('totalPemasukan').innerText=formatRupiah(totalPemasukan); document.getElementById('totalPengeluaran').innerText=formatRupiah(totalPengeluaran); document.getElementById('saldo').innerText=formatRupiah(totalPemasukan-totalPengeluaran); drawChart(totalPemasukan,totalPengeluaran); }); }
 
     function drawChart(pemasukan,pengeluaran){ const ctx=document.getElementById('grafikCanvas').getContext('2d'); if(chart) chart.destroy(); chart=new Chart(ctx,{ type:'bar', data:{ labels:['Pemasukan','Pengeluaran','Saldo'], datasets:[{ label:'Jumlah (Rp)', data:[pemasukan,pengeluaran,pemasukan-pengeluaran], backgroundColor:['#22c55e','#ef4444','#3b82f6'] }] }, options:{ responsive:true, plugins:{ legend:{ display:false } }, animation:{ duration:600 } } }); }
 
-    // === Exports: universal table -> CSV ===
+    // -----------------------
+    // Export CSV generic
+    // -----------------------
     function exportTableCSV(tableId, filename){
       const table = document.getElementById(tableId);
       if(!table) return alert('Tabel tidak ditemukan: '+tableId);
@@ -410,45 +518,529 @@
         if(cols.length===0) return;
         const rowData = [];
         cols.forEach(col => {
-          // sanitize commas and linebreaks
-          let text = col.innerText.replace(/\\r?\\n/g,' ').replace(/,/g,'');
-          // wrap in quotes
-          rowData.push('\"' + text + '\"');
+          let text = col.innerText.replace(/\r?\n/g,' ').replace(/,/g,'');
+          rowData.push('"' + text + '"');
         });
         csv.push(rowData.join(','));
       });
-      const blob = new Blob([csv.join('\\n')], { type: 'text/csv' });
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'export.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      a.href = url; a.download = filename || 'export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    // Backwards-compatible helper (existing export button in Gaji calls this)
     function exportGajiCSV(){ exportTableCSV('gajiTable','gaji_data.csv'); }
 
-    // === Utility: central load function for admin/user ===
-    function loadAllRealtimeWhenAdmin(){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); }
-    function loadAllRealtime(){ if(role==='admin') loadAllRealtimeWhenAdmin(); }
+    // -----------------------
+    // Generic utilities
+    // -----------------------
+    function filterTable(tableId, query){
+      const q=(query||'').toLowerCase();
+      const table=document.getElementById(tableId);
+      if(!table) return;
+      const rows = table.querySelectorAll('tr');
+      rows.forEach((r,i)=>{ if(i===0) return; const text = r.innerText.toLowerCase(); r.style.display = text.includes(q) ? '' : 'none'; });
+    }
 
-    // === Simple generic table filter for all columns (realtime) ===
-    function filterTable(tableId, query){ const q=(query||'').toLowerCase(); const table=document.getElementById(tableId); if(!table) return; const rows = table.querySelectorAll('tr'); rows.forEach((r,i)=>{ if(i===0) return; const text = r.innerText.toLowerCase(); r.style.display = text.includes(q) ? '' : 'none'; }); }
-
-    // === Modal helpers (not used heavily - kept for future) ===
     function openModal(title, bodyHtml, saveCallback){ modalContext = saveCallback; document.getElementById('modalTitle').innerText = title; document.getElementById('modalBody').innerHTML = bodyHtml; document.getElementById('modal').style.display = 'block'; document.getElementById('modalContainer').classList.add('active'); }
     function closeModal(){ modalContext = null; document.getElementById('modal').style.display = 'none'; document.getElementById('modalContainer').classList.remove('active'); }
     function modalSave(){ if(typeof modalContext === 'function') modalContext(); closeModal(); }
 
-    // === Initial real-time attach when admin logs in or user loads allowed pages ===
-    function initialLoad(){ if(role==='admin'){ loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals(); } else { loadGaji(false); loadProject(false); } }
+    function initialLoad(){
+      if(role === 'admin'){
+        loadGaji(true); loadKeuangan(true); loadRAB(true); loadProject(true); updateGrafikTotals();
+      } else {
+        loadGaji(false); loadProject(false);
+      }
+    }
 
-    // Keep original loadAllRealtime name behavior
-    // (a few functions above reference loadAllRealtime)
-    // If necessary, call initialLoad instead
+    // -----------------------
+    // LIST UKURAN & NAMA - improved parser + fuzzy match for "pendek" + robust PDF export
+    // -----------------------
+    let sizeData = []; // entries {nama, ukuran, ket}
+    let editingRow = null;
+
+    // sizes & regex
+    const commonSizes = ['xs','s','m','l','xl','xxl','xxxl','2xl','3xl','4xl','5xl'];
+    const sizeRegex = new RegExp('\\b(' + commonSizes.join('|') + '|\\d{2,3})\\b','i');
+
+    const sleeveMap = {
+      'lp':'Lengan Panjang','lengan panjang':'Lengan Panjang','panjang':'Lengan Panjang','ld':'Lengan Panjang',
+      'pendek':'Lengan Pendek','pdk':'Lengan Pendek','pdk.':'Lengan Pendek','lengan pendek':'Lengan Pendek',
+      'short':'Lengan Pendek','long':'Lengan Panjang','pendekk':'Lengan Pendek','pendekkk':'Lengan Pendek'
+    };
+
+    // fuzzy target words for sleeve
+    const sleeveTargets = ['pendek','panjang','lengan','lp','pdk','short','long'];
+
+    // Levenshtein distance (small implementation)
+    function levenshtein(a,b){
+      a = (a||'').toLowerCase(); b = (b||'').toLowerCase();
+      if(a===b) return 0;
+      const m = a.length, n = b.length;
+      if(m===0) return n; if(n===0) return m;
+      let v0 = new Array(n+1), v1 = new Array(n+1);
+      for(let j=0;j<=n;j++) v0[j]=j;
+      for(let i=0;i<m;i++){
+        v1[0]=i+1;
+        for(let j=0;j<n;j++){
+          const cost = a[i] === b[j] ? 0 : 1;
+          v1[j+1] = Math.min(v1[j]+1, v0[j+1]+1, v0[j]+cost);
+        }
+        [v0,v1] = [v1,v0];
+      }
+      return v0[n];
+    }
+
+    // image preview
+    const sizeImageInput = document.getElementById('sizeImage');
+    if(sizeImageInput){
+      sizeImageInput.addEventListener('change', (e)=>{
+        const f = e.target.files[0];
+        const img = document.getElementById('sizeImagePreview');
+        if(!f){ img.style.display='none'; img.src=''; return; }
+        const r = new FileReader();
+        r.onload = (ev)=>{ img.src = ev.target.result; img.style.display='block'; }
+        r.readAsDataURL(f);
+      });
+    }
+
+    function normalizeToken(tok){ return String(tok||'').trim().toLowerCase(); }
+
+    function detectSizeFromTokens(tokens){
+      for(const t of tokens){
+        const x = normalizeToken(t).replace(/[^\w]/g,'');
+        if(sizeRegex.test(x)){
+          return x.toUpperCase();
+        }
+      }
+      return '';
+    }
+
+    function detectSleeveFromTokens(tokens){
+      // direct mapping first
+      for(const t of tokens){
+        const k = normalizeToken(t).replace(/\./g,'');
+        if(!k) continue;
+        for(const key in sleeveMap){
+          if(k === key || k.includes(key) || key.includes(k)) return sleeveMap[key];
+        }
+      }
+      // fuzzy: check each token against targets with small distance
+      for(const t of tokens){
+        const k = normalizeToken(t).replace(/[^\w]/g,'');
+        if(!k) continue;
+        for(const target of sleeveTargets){
+          const d = levenshtein(k, target);
+          if(d <= 2){ // tolerate small typos
+            if(target.includes('pendek')) return 'Lengan Pendek';
+            if(target.includes('panjang')) return 'Lengan Panjang';
+            if(target === 'short') return 'Lengan Pendek';
+            if(target === 'long') return 'Lengan Panjang';
+          }
+        }
+      }
+      return '';
+    }
+
+    function cleanLineNoise(line){
+      let s = line.replace(/^\s*[\*\-\•]+\s*/,'');
+      s = s.replace(/^\s*\d+\s*[\.\)]\s*/,'');
+      s = s.replace(/^\s*[:\-\–\—]+\s*/,'');
+      s = s.replace(/^\*+|\*+$/g,'');
+      return s.trim();
+    }
+
+    function stripParenthesesContent(s){
+      // keep parentheses content for cases like "(60 79)" by optionally preserving it.
+      // But for parsing size/ket we will remove for token detection but preserve original when needed.
+      return s.replace(/\s*\([^\)]*\)/g,'').replace(/\s*\[[^\]]*\]/g,'').trim();
+    }
+
+    function processSizeList(){
+      const raw = document.getElementById('sizeInput').value || '';
+      if(!raw.trim()) return alert('Masukkan list dulu!');
+      sizeData = [];
+
+      const lines = raw.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
+
+      lines.forEach(line=>{
+        let original = line;
+        line = cleanLineNoise(line);
+
+        // header detection: "LIST ..." skip as data but set project name if empty
+        if(/^(list\s+kaos|list|daftar)/i.test(line) && !sizeRegex.test(line)){
+          if(!document.getElementById('exportProjectName').value){
+            const maybe = line.replace(/^(list(\s+kaos)?\s*[:\-–]*)/i,'').trim();
+            if(maybe.length>0 && maybe.split(/\s+/).length <= 8) document.getElementById('exportProjectName').value = maybe;
+          }
+          return;
+        }
+
+        // walikelas handling
+        if(/^(walikelas|wali kelas|wakil kelas)\b[:\s-]*/i.test(line)){
+          line = line.replace(/^(walikelas|wali kelas|wakil kelas)\b[:\s-]*/i,'').trim();
+        }
+
+        // preserve parentheses separately
+        const parenthesesMatches = original.match(/\([^\)]*\)/g) || [];
+
+        // remove parentheses for token parsing
+        let normalized = stripParenthesesContent(line);
+
+        // split by common separators first
+        let parts = normalized.split(/[-;|,]+/).map(p=>p.trim()).filter(p=>p.length>0);
+
+        if(parts.length === 1) parts = normalized.split(/\s+/).map(p=>p.trim()).filter(p=>p.length>0);
+
+        let ukuran = detectSizeFromTokens(parts);
+        let ket = '';
+        let nama = '';
+
+        if(parts.length >= 3){
+          let sizeIndex = -1;
+          for(let i=0;i<parts.length;i++){
+            if(detectSizeFromTokens([parts[i]])) { sizeIndex = i; break; }
+          }
+          if(sizeIndex >= 0){
+            ukuran = detectSizeFromTokens([parts[sizeIndex]]);
+            nama = parts.slice(0,sizeIndex).join(' ').trim();
+            ket = parts.slice(sizeIndex+1).join(' ').trim();
+          } else {
+            const tokens = normalized.split(/\s+/);
+            const sizeFromTokens = detectSizeFromTokens(tokens);
+            if(sizeFromTokens){
+              ukuran = sizeFromTokens;
+              const idx = tokens.findIndex(t=> detectSizeFromTokens([t]) === sizeFromTokens );
+              if(idx > 0){ nama = tokens.slice(0,idx).join(' '); ket = tokens.slice(idx+1).join(' '); }
+              else { nama = tokens[0]; ket = tokens.slice(1).join(' '); }
+            } else {
+              nama = parts[0];
+              ukuran = parts[1] || '';
+              ket = parts.slice(2).join(' ');
+            }
+          }
+        } else {
+          const tokens = normalized.split(/\s+/).map(t=>t.trim()).filter(t=>t.length>0);
+          const detectedSize = detectSizeFromTokens(tokens);
+          const detectedSleeve = detectSleeveFromTokens(tokens);
+          if(detectedSize){
+            ukuran = detectedSize;
+            const idx = tokens.findIndex(t=> detectSizeFromTokens([t]) === detectedSize );
+            if(idx > 0){ nama = tokens.slice(0,idx).join(' '); ket = tokens.slice(idx+1).join(' '); }
+            else { nama = tokens[0]; ket = tokens.slice(1).join(' '); }
+            if(!ket && detectedSleeve) ket = detectedSleeve;
+          } else {
+            // fallback: try to identify sleeve typo via fuzzy
+            const ds = detectSleeveFromTokens(tokens);
+            if(ds){
+              ket = ds;
+              // set nama as everything excluding sleeve tokens
+              const filtered = tokens.filter(t => levenshtein(t, 'pendek') > 2 && levenshtein(t, 'panjang') > 2 && !sizeRegex.test(t));
+              nama = filtered.join(' ');
+            } else {
+              nama = normalized;
+              ukuran = '';
+              ket = '';
+            }
+          }
+        }
+
+        // reattach parentheses info to ket or ukuran if it exists
+        if(parenthesesMatches.length > 0){
+          const p = parenthesesMatches.join(' ').replace(/[()]/g,'').trim();
+          if(p) {
+            if(!ket) ket = p;
+            else ket += ' ' + p;
+          }
+        }
+
+        if(ket){
+          const lk = ket.toLowerCase();
+          for(const key in sleeveMap){
+            if(lk.includes(key)){ ket = sleeveMap[key]; break; }
+          }
+          if(/(^|\s)panjang($|\s)/i.test(ket) && !/lengan/i.test(ket)) ket = 'Lengan Panjang';
+          if(/(^|\s)pendek($|\s)/i.test(ket) && !/lengan/i.test(ket)) ket = 'Lengan Pendek';
+        } else {
+          const tokens = normalized.split(/\s+/);
+          const ds = detectSleeveFromTokens(tokens);
+          if(ds) ket = ds;
+        }
+
+        nama = (nama || '').trim();
+        ukuran = (ukuran || '').toString().trim();
+        ket = (ket || '').trim();
+
+        if(nama.toLowerCase().startsWith('walikelas') || nama.toLowerCase().startsWith('wali kelas')){
+          const toks = nama.split(/\s+/);
+          if(toks.length > 1) nama = toks.slice(1).join(' ');
+        }
+
+        if(!nama && (ukuran || ket)){
+          let leftovers = original.replace(/\([^\)]*\)/g,'').replace(/[\d\.\)\-\,\*]/g,'').replace(/xl|xxl|m|l|s/ig,'').replace(/pendek|panjang|pdk|lp/ig,'').trim();
+          if(leftovers) nama = leftovers.split(/\s+/).slice(0,3).join(' ');
+        }
+
+        if(!nama) nama = '(tidak terdeteksi)';
+
+        sizeData.push({ nama, ukuran, ket });
+      });
+
+      // filter blank duplicates
+      sizeData = sizeData.filter(d => (d.nama && d.nama !== '(tidak terdeteksi)') || d.ukuran || d.ket);
+
+      // sorting
+      const sortBy = document.getElementById('sortBy') ? document.getElementById('sortBy').value : 'ukuran_ket';
+      if(sortBy === 'ukuran_ket'){
+        sizeData.sort((a,b)=>(((a.ukuran||'')+' '+(a.ket||'')+' '+(a.nama||'')).toLowerCase().localeCompare(((b.ukuran||'')+' '+(b.ket||'')+' '+(b.nama||'')).toLowerCase())));
+      } else if(sortBy === 'ket_ukuran'){
+        sizeData.sort((a,b)=>(((a.ket||'')+' '+(a.ukuran||'')+' '+(a.nama||'')).toLowerCase().localeCompare(((b.ket||'')+' '+(b.ukuran||'')+' '+(b.nama||'')).toLowerCase())));
+      } else {
+        sizeData.sort((a,b)=> (a.nama||'').localeCompare(b.nama||''));
+      }
+
+      renderSizeTable();
+    }
+
+    function renderSizeTable(){
+      const tbody = document.getElementById('sizeTable'); tbody.innerHTML='';
+      sizeData.forEach((d,i)=>{
+        const tr = document.createElement('tr'); tr.dataset.idx = i;
+        tr.innerHTML = `
+          <td class="p-3">${i+1}</td>
+          <td class="p-3" id="cell-nama-${i}">${escapeHtml(d.nama)}</td>
+          <td class="p-3" id="cell-ukuran-${i}">${escapeHtml(d.ukuran)}</td>
+          <td class="p-3" id="cell-ket-${i}">${escapeHtml(d.ket)}</td>
+          <td class="p-3 table-actions">
+            <button onclick="startEditRow(${i})" class="bg-yellow-400 btn-small">Edit</button>
+            <button onclick="deleteRow(${i})" class="bg-red-500 btn-small text-white">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(text){ return String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function startEditRow(idx){
+      if(editingRow !== null) return alert('Selesaikan edit baris lain dulu.');
+      editingRow = idx;
+      const row = document.querySelector(`tr[data-idx='${idx}']`);
+      if(!row) return;
+      const d = sizeData[idx];
+      row.innerHTML = `
+        <td class="p-3">${idx+1}</td>
+        <td class="p-3"><input id="edit-nama-${idx}" class="input-inline w-full" value="${escapeHtml(d.nama)}" /></td>
+        <td class="p-3"><input id="edit-ukuran-${idx}" class="input-inline w-full" value="${escapeHtml(d.ukuran)}" /></td>
+        <td class="p-3"><input id="edit-ket-${idx}" class="input-inline w-full" value="${escapeHtml(d.ket)}" /></td>
+        <td class="p-3 table-actions">
+          <button onclick="saveEditRow(${idx})" class="bg-green-600 btn-small text-white">Simpan</button>
+          <button onclick="cancelEditRow(${idx})" class="bg-gray-300 btn-small">Batal</button>
+        </td>
+      `;
+    }
+
+    function saveEditRow(idx){
+      const newNama = document.getElementById(`edit-nama-${idx}`).value.trim();
+      const newUkuran = document.getElementById(`edit-ukuran-${idx}`).value.trim();
+      const newKet = document.getElementById(`edit-ket-${idx}`).value.trim();
+      sizeData[idx] = { nama: newNama || '(tidak terdeteksi)', ukuran: newUkuran, ket: newKet };
+      editingRow = null;
+      renderSizeTable();
+    }
+
+    function cancelEditRow(idx){
+      editingRow = null;
+      renderSizeTable();
+    }
+
+    function deleteRow(idx){
+      if(!confirm('Hapus baris ini?')) return;
+      sizeData.splice(idx,1);
+      renderSizeTable();
+    }
+
+    function addManualRow(){
+      const nama = document.getElementById('manualNama').value.trim();
+      const ukuran = document.getElementById('manualUkuran').value.trim();
+      const ket = document.getElementById('manualKet').value.trim();
+      if(!nama) return alert('Nama wajib diisi untuk tambah manual.');
+      sizeData.push({ nama, ukuran, ket });
+      document.getElementById('manualNama').value = '';
+      document.getElementById('manualUkuran').value = '';
+      document.getElementById('manualKet').value = '';
+      renderSizeTable();
+    }
+
+    function exportSizeCSV(){
+      if(sizeData.length === 0) return alert('Belum ada data untuk export!');
+      let csv = 'No,Nama,Ukuran,Keterangan\n';
+      sizeData.forEach((d,i)=>{
+        const nama = (d.nama||'').replace(/"/g,'""');
+        const ukuran = (d.ukuran||'').replace(/"/g,'""');
+        const ket = (d.ket||'').replace(/"/g,'""');
+        csv += `${i+1},"${nama}","${ukuran}","${ket}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'list-ukuran.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // Robust PDF export: try decreasing font sizes with fresh doc instances until fits in single page
+    async function exportSizePDF(){
+      if(sizeData.length === 0) return alert('Belum ada data untuk export!');
+      let projectName = (document.getElementById('projectNama') && document.getElementById('projectNama').value.trim()) || (document.getElementById('exportProjectName') && document.getElementById('exportProjectName').value.trim()) || 'Daftar Ukuran';
+      const today = new Date();
+      const dateStr = today.toLocaleDateString();
+
+      // prepare body rows
+      const body = sizeData.map((d, i) => [ (i+1).toString(), d.nama || '', d.ukuran || '', d.ket || '' ]);
+
+      // try font sizes from normal down to minimum
+      const { jsPDF } = window.jspdf;
+      const pageFormat = { orientation: 'landscape', unit: 'pt', format: 'a4' };
+      const pageW = (new jsPDF(pageFormat)).internal.pageSize.getWidth();
+      const pageH = (new jsPDF(pageFormat)).internal.pageSize.getHeight();
+      const marginLeft = 40;
+      const marginRight = 40;
+      const headerHeight = 80;
+      const footerHeight = 30;
+      const usableW = pageW - marginLeft - marginRight;
+
+      // try with a range of fontSizes (descending)
+      const fontSizesToTry = [11,10,9,8,7,6];
+      let finalDoc = null;
+      for(const fs of fontSizesToTry){
+        const docTry = new jsPDF(pageFormat);
+        // header
+        docTry.setFont('helvetica','bold'); docTry.setFontSize(18);
+        docTry.text('TENX APPAREL', pageW/2, 40, { align: 'center' });
+        docTry.setFont('helvetica','normal'); docTry.setFontSize(12);
+        docTry.text(projectName, pageW/2, 60, { align: 'center' });
+        docTry.setFontSize(9);
+        docTry.text('Tanggal cetak: ' + dateStr, pageW - marginRight, 30, { align: 'right' });
+
+        // add image if provided (will not break if fails)
+        let imgDataUrl = null;
+        const fileInput = document.getElementById('sizeImage');
+        if(fileInput && fileInput.files && fileInput.files[0]){
+          try { imgDataUrl = await fileToDataURL(fileInput.files[0]); } catch(e){ imgDataUrl = null; }
+        }
+        if(imgDataUrl){
+          try {
+            const maxW = 100; const maxH = 60;
+            docTry.addImage(imgDataUrl, 'JPEG', pageW - marginRight - maxW, 20, maxW, maxH);
+          } catch(e){}
+        }
+
+        // try autoTable
+        docTry.autoTable({
+          startY: headerHeight + 20,
+          head: [['No','Nama','Ukuran','Keterangan']],
+          body: body,
+          theme: 'grid',
+          styles: { fontSize: fs, cellPadding: 4, overflow: 'ellipsize', valign: 'middle' },
+          headStyles: { fillColor: [14,165,233], textColor: 255, halign: 'center' },
+          columnStyles: {
+            0: { cellWidth: 36, halign: 'center' },
+            1: { cellWidth: Math.max(180, usableW * 0.55) },
+            2: { cellWidth: 70, halign: 'center' },
+            3: { cellWidth: Math.max(120, usableW * 0.30) }
+          },
+          margin: { left: marginLeft, right: marginRight },
+          pageBreak: 'avoid',
+          didDrawPage: function (data){
+            docTry.setFontSize(8);
+            const footer = 'TENX APPAREL · ' + projectName + ' · ' + dateStr;
+            docTry.text(footer, marginLeft, pageH - 20);
+            docTry.text('Halaman ' + (docTry.internal.getCurrentPageInfo().pageNumber), pageW - marginRight, pageH - 20, { align: 'right' });
+          }
+        });
+
+        const pages = docTry.internal.getNumberOfPages();
+        if(pages === 1){
+          finalDoc = docTry;
+          break;
+        }
+        // else try next smaller font
+      }
+
+      // if still no finalDoc, take smallest font attempt (last in loop might not have fit, but we save it anyway)
+      if(!finalDoc){
+        // final fallback: use smallest font and accept last docTry result
+        const fs = fontSizesToTry[fontSizesToTry.length - 1];
+        const docTry = new jsPDF(pageFormat);
+        docTry.setFont('helvetica','bold'); docTry.setFontSize(18);
+        docTry.text('TENX APPAREL', pageW/2, 40, { align: 'center' });
+        docTry.setFont('helvetica','normal'); docTry.setFontSize(12);
+        docTry.text(projectName, pageW/2, 60, { align: 'center' });
+        docTry.setFontSize(9);
+        docTry.text('Tanggal cetak: ' + dateStr, pageW - marginRight, 30, { align: 'right' });
+        let imgDataUrl = null;
+        const fileInput = document.getElementById('sizeImage');
+        if(fileInput && fileInput.files && fileInput.files[0]){
+          try { imgDataUrl = await fileToDataURL(fileInput.files[0]); } catch(e){ imgDataUrl = null; }
+        }
+        if(imgDataUrl){
+          try {
+            const maxW = 100; const maxH = 60;
+            docTry.addImage(imgDataUrl, 'JPEG', pageW - marginRight - maxW, 20, maxW, maxH);
+          } catch(e){}
+        }
+        docTry.autoTable({
+          startY: headerHeight + 20,
+          head: [['No','Nama','Ukuran','Keterangan']],
+          body: body,
+          theme: 'grid',
+          styles: { fontSize: fs, cellPadding: 3, overflow: 'ellipsize', valign: 'middle' },
+          headStyles: { fillColor: [14,165,233], textColor: 255, halign: 'center' },
+          columnStyles: {
+            0: { cellWidth: 36, halign: 'center' },
+            1: { cellWidth: Math.max(150, usableW * 0.55) },
+            2: { cellWidth: 60, halign: 'center' },
+            3: { cellWidth: Math.max(100, usableW * 0.30) }
+          },
+          margin: { left: marginLeft, right: marginRight },
+          pageBreak: 'avoid',
+          didDrawPage: function (data){
+            docTry.setFontSize(8);
+            const footer = 'TENX APPAREL · ' + projectName + ' · ' + dateStr;
+            docTry.text(footer, marginLeft, pageH - 20);
+            docTry.text('Halaman ' + (docTry.internal.getCurrentPageInfo().pageNumber), pageW - marginRight, pageH - 20, { align: 'right' });
+          }
+        });
+        finalDoc = docTry;
+      }
+
+      // finally save
+      function sanitizeFilename(name){ return name.replace(/[^a-z0-9_\-\.]/gi,'_'); }
+      finalDoc.save(sanitizeFilename(projectName) + '_list-ukuran.pdf');
+    }
+
+    function fileToDataURL(file){
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e){ resolve(e.target.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function clearSizeList(){
+      sizeData = [];
+      document.getElementById('sizeInput').value = '';
+      const img = document.getElementById('sizeImagePreview');
+      if(img){ img.src = ''; img.style.display = 'none'; }
+      renderSizeTable();
+    }
+
+    // -----------------------
+    // End list ukuran code
+    // -----------------------
+
+    // expose old name
+    function loadAllRealtime(){ initialLoad(); }
   </script>
 </body>
 </html>
